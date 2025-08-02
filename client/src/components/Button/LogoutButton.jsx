@@ -3,8 +3,8 @@ import { ImExit } from "react-icons/im";
 import { toast } from "react-toastify";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { logoutUser } from "../api/api";
-import { logoutSuccess } from "../Redux/slices/authSlice";
+import { logoutUser } from "../../api/api";
+import { logoutSuccess } from "../../Redux/slices/authSlice";
 
 const LogoutButton = () => {
   const dispatch = useDispatch();

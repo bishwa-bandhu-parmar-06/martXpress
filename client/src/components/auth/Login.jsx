@@ -7,7 +7,7 @@ import { loginSuccess } from "../../Redux/slices/authSlice";
 const Login = ({ setIsLogin }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const [formData, setFormData] = useState({
     email: "",
@@ -19,12 +19,13 @@ const [isLoading, setIsLoading] = useState(false);
   const handleSubmit = async () => {
     try {
       const response = await loginRole(formData);
-      console.log("Login Response : ", response);
+      // console.log("Login Response : ", response);
 
       if (response.success) {
+        const usersData = response.users;
         const role = response.users.role;
         toast.success("Login Success");
-        dispatch(loginSuccess({isLoggedIn: true, role}));
+        dispatch(loginSuccess({ usersData, isLoggedIn: true, role }));
         setFormData({
           email: "",
           password: "",
@@ -109,7 +110,11 @@ const [isLoading, setIsLoading] = useState(false);
               disabled={isLoading}
               type="button"
               id="submitbtn"
-              className={`w-full h-12 text-xl bg-[#ff6720] cursor-pointer text-white font-semibold rounded-2xl hover:bg-[#e25a1b] transition duration-200 ${isLoading ? "opacity-50 cursor-not-allowed" : "hover:bg-[#e25a1b]"}`}
+              className={`w-full h-12 text-xl bg-[#ff6720] cursor-pointer text-white font-semibold rounded-2xl hover:bg-[#e25a1b] transition duration-200 ${
+                isLoading
+                  ? "opacity-50 cursor-not-allowed"
+                  : "hover:bg-[#e25a1b]"
+              }`}
             >
               Login
             </button>

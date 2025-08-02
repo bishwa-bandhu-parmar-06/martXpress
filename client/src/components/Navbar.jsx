@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import SliderMenu from "./SliderMenu";
 import Search from "./Search";
@@ -7,14 +7,18 @@ import { PiUserSwitchBold } from "react-icons/pi";
 import { IoStorefrontSharp } from "react-icons/io5";
 import { CgMenuGridR } from "react-icons/cg";
 import PageScrolling from "./PageScrolling";
-import ThemeToggleBtn from "./ThemeToggleBtn";
-import CartButton from "./CartButton";
+import ThemeToggleBtn from "./Button/ThemeToggleBtn";
+import CartButton from "./Button/CartButton";
 import { useSelector } from "react-redux";
 
 // importing logo
 import logo from "/logo.png";
+import UsersDetailHover from "./UsersDetailHover";
 
 const Navbar = () => {
+  const [IsUsersHover, setIsUsersHover] = useState(false);
+  
+
   const [isOpen, setIsOpen] = useState(false);
   const { isLoggedIn, role } = useSelector((state) => state.auth);
 
@@ -84,13 +88,26 @@ const Navbar = () => {
             )}
 
             {isLoggedIn && (role === "admin" || role === "users") && (
-              <Link
-                to={role === "users" ? "/users/profile" : "/admin/profile"}
-                title="User Profile"
-                className="flex items-center gap-1 hover:text-[#F37324]  transition-colors"
+              <div
+                onMouseEnter={() => setIsUsersHover(true)}
+                onMouseLeave={() => setIsUsersHover(false)}
+                className="relative inline-block"
               >
+                <Link
+                  to={role === "users" ? "/users/profile" : "/admin/profile"}
+                  title="User Profile"
+                  className="flex items-center gap-1 hover:text-[#F37324]  transition-colors"
+                >
                 <PiUserSwitchBold className="text-2xl" />
-              </Link>
+                </Link>
+                {IsUsersHover && (
+                  <div
+                    className="absolute top-full left-0 right-4"
+                  >
+                    <UsersDetailHover />
+                  </div>
+                )}
+              </div>
             )}
           </div>
 
