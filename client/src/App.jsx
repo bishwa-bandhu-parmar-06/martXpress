@@ -17,6 +17,7 @@ import Auth from "./Pages/Auth";
 import SellersProfile from "./Pages/sellers/SellersProfile";
 import UsersProfile from "./Pages/users/UsersProfile";
 import AdminProfile from "./Pages/admin/AdminProfile";
+import UnAuthorize from "./Pages/UnAuthorize";
 
 // importing protected routes components
 import ProtectedRoute from "./components/ProtectedPage/ProtectedRoute";
@@ -33,6 +34,7 @@ const App = () => {
           <Route path="/services" element={<Services />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/seller-auth" element={<Auth />} />
+          <Route path="/unauthorized" element={<UnAuthorize />} />
           <Route
             path="/seller/profile"
             element={

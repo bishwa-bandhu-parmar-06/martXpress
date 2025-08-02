@@ -1,17 +1,17 @@
 // src/components/auth/ProtectedRoute.jsx
 import React from "react";
 import { Navigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
-  const token = localStorage.getItem("token");
-  const role = localStorage.getItem("role");
+  const { isLoggedIn, role } = useSelector((state) => state.auth);
 
-  // No token means not logged in
-  if (!token) {
+  // Not logged in
+  if (!isLoggedIn) {
     return <Navigate to="/auth" replace />;
   }
 
-  // Check if user role is allowed to access this route
+  // Logged in but role not allowed
   if (allowedRoles && !allowedRoles.includes(role)) {
     return <Navigate to="/unauthorized" replace />;
   }

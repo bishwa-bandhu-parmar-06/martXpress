@@ -1,6 +1,7 @@
 // Load environment variables from .env file
 require("dotenv").config();
 
+const session = require("express-session")
 // External imports
 const express = require("express");
 const cors = require("cors");
@@ -17,7 +18,16 @@ const app = express();
 
 // Middleware to parse JSON
 app.use(express.json());
-
+app.use(session({
+  secret: process.env.SESSION_SECRET_KEY,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    maxAge: 1000 * 60 * 60, // 1 hour
+    httpOnly: true,
+    secure: false // true if using HTTPS
+  }
+}));
 // CORS Configuration
 const whitelist = ["http://localhost:5173"];
 const corsOptions = {
