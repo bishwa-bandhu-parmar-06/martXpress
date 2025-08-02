@@ -1,12 +1,17 @@
-import React from 'react'
-import LogoutButton from '../../components/LogoutButton'
+import React from "react";
+import LogoutButton from "../../components/Button/LogoutButton";
+import { useSelector } from "react-redux";
 
 const UsersProfile = () => {
+  const usersData = useSelector((state) => state.auth.usersData);
+
   return (
     <div>
+      <h1>Name : {usersData?.name}</h1>
+      <p>Email : {usersData?.email}</p>
       <LogoutButton />
     </div>
-  )
-}
+  );
+};
 
-export default UsersProfile
+export default UsersProfile;
