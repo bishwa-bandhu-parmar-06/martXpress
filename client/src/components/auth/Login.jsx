@@ -2,9 +2,12 @@ import React, { useState } from "react";
 import { toast } from "react-toastify";
 import { loginRole } from "../../api/api";
 import { useNavigate } from "react-router-dom";
-
+import { useDispatch } from "react-redux";
+import { loginSuccess } from "../../Redux/slices/authSlice";
 const Login = ({ setIsLogin }) => {
+  const dispatch = useDispatch();
   const navigate = useNavigate();
+const [isLoading, setIsLoading] = useState(false);
 
   const [formData, setFormData] = useState({
     email: "",
@@ -19,16 +22,9 @@ const Login = ({ setIsLogin }) => {
       console.log("Login Response : ", response);
 
       if (response.success) {
-        const usersId = response.users._id;
-        console.log("Users Id : ", usersId)
-        localStorage.setItem("usersId", usersId);
-        const role = response.users?.role;
-        // console.log("Checking role : ", role);
-        localStorage.setItem("role", role);
-        const token = response.token;
-        // console.log("Checking Token : ", token);
-        localStorage.setItem("token", token);
+        const role = response.users.role;
         toast.success("Login Success");
+        dispatch(loginSuccess({isLoggedIn: true, role}));
         setFormData({
           email: "",
           password: "",
@@ -110,9 +106,10 @@ const Login = ({ setIsLogin }) => {
           <div className="w-full">
             <button
               onClick={handleSubmit}
+              disabled={isLoading}
               type="button"
               id="submitbtn"
-              className="w-full h-12 text-xl bg-[#ff6720] cursor-pointer text-white font-semibold rounded-2xl hover:bg-[#e25a1b] transition duration-200"
+              className={`w-full h-12 text-xl bg-[#ff6720] cursor-pointer text-white font-semibold rounded-2xl hover:bg-[#e25a1b] transition duration-200 ${isLoading ? "opacity-50 cursor-not-allowed" : "hover:bg-[#e25a1b]"}`}
             >
               Login
             </button>

@@ -35,3 +35,10 @@ export const loginRole = async (formData) =>{
   const response = await axiosInstance.post("/auth/login", formData);
   return response.data;
 }
+
+
+// logout user function
+export const logoutUser = async () => {
+  const response = await axiosInstance.post("/auth/logout", {}, { withCredentials: true });
+  return response.data;
+};

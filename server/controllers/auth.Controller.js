@@ -224,14 +224,19 @@ const login = async (req, res) => {
         .json({ status: 500, success: false, message: "Invalid credentials." });
     }
 
-    const token = jwt.sign(
-      { userId: foundUsers._id, role },
-      process.env.JWT_SECRET,
-      {
-        expiresIn: "1h",
-      }
-    );
+    // const token = jwt.sign(
+    //   { userId: foundUsers._id, role },
+    //   process.env.JWT_SECRET,
+    //   {
+    //     expiresIn: "1h",
+    //   }
+    // );
 
+    // ✅ Save session
+    req.session.user = {
+      id: foundUsers._id,
+      role: role
+    };
     // Convert user to object and delete password
     const userData = foundUsers.toObject();
     // console.log("first", userData);
@@ -244,7 +249,6 @@ const login = async (req, res) => {
       success: true,
       message: `${role} login Successfully.`,
       users: userData,
-      token,
     });
   } catch (error) {
     console.error("Getting error while login : ", error);
@@ -314,10 +318,23 @@ const getUsersById = async (req, res) => {
   }
 };
 
+
+const logout = (req, res) => {
+  req.session.destroy(err => {
+    if (err) {
+      return res.status(500).json({ success: false, message: "Logout failed." });
+    }
+    res.clearCookie("connect.sid"); // default cookie name
+    return res.status(200).json({ success: true, message: "Logged out successfully." });
+  });
+};
+
+
 module.exports = {
   registerUsers,
   registerSeller,
   registerAdmin,
   login,
+  logout,
   getUsersById
 };
