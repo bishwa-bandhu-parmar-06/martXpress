@@ -5,12 +5,15 @@ import { HiUserGroup } from "react-icons/hi";
 import { ImExit } from "react-icons/im";
 import { IoHome, IoStorefrontSharp } from "react-icons/io5";
 import { MdOutlineMiscellaneousServices } from "react-icons/md";
+import { PiUserSwitchBold } from "react-icons/pi";
 import { RiContactsFill } from "react-icons/ri";
+import { useSelector } from "react-redux";
 import { Link, useLocation } from "react-router-dom";
 
 const SliderMenu = ({ isOpen, toggleSidebar }) => {
   const menuRef = useRef(null);
   const location = useLocation();
+  const { isLoggedIn, role } = useSelector((state) => state.auth);
   const isActive = (path) => {
     return location.pathname === path;
   };
@@ -86,29 +89,65 @@ const SliderMenu = ({ isOpen, toggleSidebar }) => {
               }`}
               to={"/services"}
             >
-              <MdOutlineMiscellaneousServices /> Services
+              <MdOutlineMiscellaneousServices className="text-xl" /> Services
             </Link>
           </li>
-          <li className="w-fit p-2 font-semibold text-md hover:scale-110 transition-transform duration-300">
-            <Link
-              className={`flex items-center gap-3 hover:text-[#F37324] ${
-                isActive("/seller-auth") ? "text-[#F37324]" : "text-[#0050A0]"
-              }`}
-              to={"/seller-auth"}
-            >
-              <IoStorefrontSharp /> Become a Seller
-            </Link>
-          </li>
-          <li className="w-fit p-2 font-semibold text-md hover:text-[#F37324] hover:scale-110 transition-transform duration-300">
-            <Link
-              className={`flex items-center gap-3 hover:text-[#F37324] ${
-                isActive("/auth") ? "text-[#F37324]" : "text-[#0050A0]"
-              }`}
-              to={"/auth"}
-            >
-              <ImExit /> Signin/Signup
-            </Link>
-          </li>
+          {!isLoggedIn && (
+            <>
+              <li className="w-fit p-2 font-semibold text-md hover:scale-110 transition-transform duration-300">
+                <Link
+                  className={`flex items-center gap-3 hover:text-[#F37324] ${
+                    isActive("/seller-auth")
+                      ? "text-[#F37324]"
+                      : "text-[#0050A0]"
+                  }`}
+                  to={"/seller-auth"}
+                >
+                  <IoStorefrontSharp className="text-xl" /> Become a Seller
+                </Link>
+              </li>
+              <li className="w-fit p-2 font-semibold text-md hover:text-[#F37324] hover:scale-110 transition-transform duration-300">
+                <Link
+                  className={`flex items-center gap-3 hover:text-[#F37324] ${
+                    isActive("/auth") ? "text-[#F37324]" : "text-[#0050A0]"
+                  }`}
+                  to={"/auth"}
+                >
+                  <ImExit className="text-xl" /> Signin/Signup
+                </Link>
+              </li>
+            </>
+          )}
+          {isLoggedIn && role === "seller" && (
+            <li className="w-fit p-2 font-semibold text-md hover:text-[#F37324] hover:scale-110 transition-transform duration-300">
+              <Link
+                className={`flex items-center gap-3 hover:text-[#F37324] ${
+                  isActive("/seller/profile")
+                    ? "text-[#F37324]"
+                    : "text-[#0050A0]"
+                }`}
+                to={"/seller/profile"}
+              >
+                <PiUserSwitchBold className="text-xl" /> Profile
+              </Link>
+            </li>
+          )}
+          {isLoggedIn && (role === "admin" || role === "users") && (
+            <li className="w-fit p-2 font-semibold text-md hover:text-[#F37324] hover:scale-110 transition-transform duration-300">
+              <Link
+                className={`flex items-center gap-3 hover:text-[#F37324] ${
+                  isActive(
+                    role === "users" ? "/users/profile" : "/admin/profile"
+                  )
+                    ? "text-[#F37324]"
+                    : "text-[#0050A0]"
+                }`}
+                to={role === "users" ? "/users/profile" : "/admin/profile"}
+              >
+                <PiUserSwitchBold className="text-xl" /> Profile
+              </Link>
+            </li>
+          )}
         </ul>
       </div>
     </>

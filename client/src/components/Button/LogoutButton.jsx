@@ -28,7 +28,7 @@ const LogoutButton = () => {
     <button
       onClick={handleLogout}
       title="Logout"
-      className="flex items-center gap-2 bg-[#F37324] hover:bg-[#0050A0] text-white font-semibold py-2 px-4 rounded shadow-md transition-colors duration-300"
+      className="flex items-center cursor-pointer gap-2 bg-[#F37324] hover:bg-[#0050A0] text-white font-semibold py-2 px-4 rounded shadow-md transition-colors duration-300"
     >
       <ImExit size={18} />
       Logout

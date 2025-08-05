@@ -17,7 +17,6 @@ import UsersDetailHover from "./UsersDetailHover";
 
 const Navbar = () => {
   const [IsUsersHover, setIsUsersHover] = useState(false);
-  
 
   const [isOpen, setIsOpen] = useState(false);
   const { isLoggedIn, role } = useSelector((state) => state.auth);
@@ -88,25 +87,25 @@ const Navbar = () => {
             )}
 
             {isLoggedIn && (role === "admin" || role === "users") && (
-              <div
-                onMouseEnter={() => setIsUsersHover(true)}
-                onMouseLeave={() => setIsUsersHover(false)}
-                className="relative inline-block"
-              >
+              <div className="relative group">
                 <Link
                   to={role === "users" ? "/users/profile" : "/admin/profile"}
                   title="User Profile"
-                  className="flex items-center gap-1 hover:text-[#F37324]  transition-colors"
+                  className="flex items-center gap-1 hover:text-[#F37324] transition-colors"
+                  onMouseEnter={() => setIsUsersHover(true)}
                 >
-                <PiUserSwitchBold className="text-2xl" />
+                  <PiUserSwitchBold className="text-2xl" />
                 </Link>
-                {IsUsersHover && (
-                  <div
-                    className="absolute top-full left-0 right-4"
-                  >
-                    <UsersDetailHover />
-                  </div>
-                )}
+
+                {/* <div
+                  className={`absolute top-full left-1/2 transform -translate-x-1/2 mt-0 z-50 ${
+                    IsUsersHover ? "block" : "hidden"
+                  }`}
+                  onMouseEnter={() => setIsUsersHover(true)}
+                  onMouseLeave={() => setIsUsersHover(false)}
+                >
+                  <UsersDetailHover />
+                </div> */}
               </div>
             )}
           </div>
@@ -115,7 +114,7 @@ const Navbar = () => {
           <button
             onClick={toggleSidebar}
             aria-label="Toggle menu"
-            className="p-1 text-2xl md:text-xl hover:text-[#F37324]  transition-colors focus:outline-none"
+            className="p-1 text-2xl cursor-pointer md:text-xl hover:text-[#F37324]  transition-colors focus:outline-none"
           >
             <CgMenuGridR />
           </button>

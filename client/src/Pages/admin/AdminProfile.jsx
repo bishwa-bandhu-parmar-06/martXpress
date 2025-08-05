@@ -9,6 +9,7 @@ const AdminProfile = () => {
     <div>
       <h1>Name : {usersData?.name}</h1>
       <p>Email : {usersData?.email}</p>
+      <p>Role : {usersData?.role}</p>
       <LogoutButton />
     </div>
   );
