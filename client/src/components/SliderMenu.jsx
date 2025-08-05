@@ -1,10 +1,11 @@
 import React, { useEffect, useRef } from "react";
+import { FaEdit, FaList } from "react-icons/fa";
 import { FcAbout } from "react-icons/fc";
 import { GiCrossMark } from "react-icons/gi";
 import { HiUserGroup } from "react-icons/hi";
 import { ImExit } from "react-icons/im";
 import { IoHome, IoStorefrontSharp } from "react-icons/io5";
-import { MdOutlineMiscellaneousServices } from "react-icons/md";
+import { MdAdd, MdOutlineMiscellaneousServices } from "react-icons/md";
 import { PiUserSwitchBold } from "react-icons/pi";
 import { RiContactsFill } from "react-icons/ri";
 import { useSelector } from "react-redux";
@@ -62,38 +63,40 @@ const SliderMenu = ({ isOpen, toggleSidebar }) => {
               <IoHome /> Home
             </Link>
           </li>
-          <li className="w-fit p-2 font-semibold text-md hover:text-[#F37324] hover:scale-110 transition-transform duration-300">
-            <Link
-              className={`flex items-center gap-3 hover:text-[#F37324] ${
-                isActive("/contact") ? "text-[#F37324]" : "text-[#0050A0]"
-              }`}
-              to={"/contact"}
-            >
-              <RiContactsFill /> Contact Us
-            </Link>
-          </li>
-          <li className="w-fit p-2 font-semibold text-md hover:text-[#F37324] hover:scale-110 transition-transform duration-300">
-            <Link
-              className={`flex items-center gap-3 hover:text-[#F37324] ${
-                isActive("/about") ? "text-[#F37324]" : "text-[#0050A0]"
-              }`}
-              to={"/about"}
-            >
-              <HiUserGroup /> About Us
-            </Link>
-          </li>
-          <li className="w-fit p-2 font-semibold text-md hover:text-[#F37324] hover:scale-110 transition-transform duration-300">
-            <Link
-              className={`flex items-center gap-3 hover:text-[#F37324] ${
-                isActive("/services") ? "text-[#F37324]" : "text-[#0050A0]"
-              }`}
-              to={"/services"}
-            >
-              <MdOutlineMiscellaneousServices className="text-xl" /> Services
-            </Link>
-          </li>
           {!isLoggedIn && (
             <>
+              <li className="w-fit p-2 font-semibold text-md hover:text-[#F37324] hover:scale-110 transition-transform duration-300">
+                <Link
+                  className={`flex items-center gap-3 hover:text-[#F37324] ${
+                    isActive("/contact") ? "text-[#F37324]" : "text-[#0050A0]"
+                  }`}
+                  to={"/contact"}
+                >
+                  <RiContactsFill /> Contact Us
+                </Link>
+              </li>
+              <li className="w-fit p-2 font-semibold text-md hover:text-[#F37324] hover:scale-110 transition-transform duration-300">
+                <Link
+                  className={`flex items-center gap-3 hover:text-[#F37324] ${
+                    isActive("/about") ? "text-[#F37324]" : "text-[#0050A0]"
+                  }`}
+                  to={"/about"}
+                >
+                  <HiUserGroup /> About Us
+                </Link>
+              </li>
+              <li className="w-fit p-2 font-semibold text-md hover:text-[#F37324] hover:scale-110 transition-transform duration-300">
+                <Link
+                  className={`flex items-center gap-3 hover:text-[#F37324] ${
+                    isActive("/services") ? "text-[#F37324]" : "text-[#0050A0]"
+                  }`}
+                  to={"/services"}
+                >
+                  <MdOutlineMiscellaneousServices className="text-xl" />{" "}
+                  Services
+                </Link>
+              </li>
+
               <li className="w-fit p-2 font-semibold text-md hover:scale-110 transition-transform duration-300">
                 <Link
                   className={`flex items-center gap-3 hover:text-[#F37324] ${
@@ -119,18 +122,59 @@ const SliderMenu = ({ isOpen, toggleSidebar }) => {
             </>
           )}
           {isLoggedIn && role === "seller" && (
-            <li className="w-fit p-2 font-semibold text-md hover:text-[#F37324] hover:scale-110 transition-transform duration-300">
-              <Link
-                className={`flex items-center gap-3 hover:text-[#F37324] ${
-                  isActive("/seller/profile")
-                    ? "text-[#F37324]"
-                    : "text-[#0050A0]"
-                }`}
-                to={"/seller/profile"}
-              >
-                <PiUserSwitchBold className="text-xl" /> Profile
-              </Link>
-            </li>
+            <>
+              <li className="w-fit p-2 font-semibold text-md hover:text-[#F37324] hover:scale-110 transition-transform duration-300">
+                <Link
+                  className={`flex items-center gap-3 hover:text-[#F37324] ${
+                    isActive("/seller/profile")
+                      ? "text-[#F37324]"
+                      : "text-[#0050A0]"
+                  }`}
+                  to={"/seller/profile"}
+                >
+                  <PiUserSwitchBold className="text-xl" /> Profile
+                </Link>
+              </li>
+
+              <li className="w-fit p-2 font-semibold text-md hover:text-[#F37324] hover:scale-110 transition-transform duration-300">
+                <Link
+                  className={`flex items-center gap-3 hover:text-[#F37324] ${
+                    isActive("/sellers/add-product")
+                      ? "text-[#F37324]"
+                      : "text-[#0050A0]"
+                  }`}
+                  to={"/sellers/add-product"}
+                >
+                  <MdAdd className="text-2xl" /> Add Product
+                </Link>
+              </li>
+
+              <li className="w-fit p-2 font-semibold text-md hover:text-[#F37324] hover:scale-110 transition-transform duration-300">
+                <Link
+                  className={`flex items-center gap-3 hover:text-[#F37324] ${
+                    isActive("/sellers/product-page")
+                      ? "text-[#F37324]"
+                      : "text-[#0050A0]"
+                  }`}
+                  to={"/sellers/product-page"}
+                >
+                  <FaList className="text-md" /> All Products
+                </Link>
+              </li>
+
+              <li className="w-fit p-2 font-semibold text-md hover:text-[#F37324] hover:scale-110 transition-transform duration-300">
+                <Link
+                  className={`flex items-center gap-3 hover:text-[#F37324] ${
+                    isActive("/sellers/update-product")
+                      ? "text-[#F37324]"
+                      : "text-[#0050A0]"
+                  }`}
+                  to={"/sellers/update-product"}
+                >
+                  <FaEdit className="text-xl" /> Update Products
+                </Link>
+              </li>
+            </>
           )}
           {isLoggedIn && (role === "admin" || role === "users") && (
             <li className="w-fit p-2 font-semibold text-md hover:text-[#F37324] hover:scale-110 transition-transform duration-300">

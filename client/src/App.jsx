@@ -21,6 +21,10 @@ import UnAuthorize from "./Pages/UnAuthorize";
 
 // importing protected routes components
 import ProtectedRoute from "./components/ProtectedPage/ProtectedRoute";
+import AllProducts from "./components/Product/AllProducts";
+import CreateProduct from "./components/Product/CreateProduct";
+import UpdateProduct from "./components/Product/UpdateProduct";
+import Cart from "./Pages/Cart";
 
 const App = () => {
   return (
@@ -34,12 +38,37 @@ const App = () => {
           <Route path="/services" element={<Services />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/seller-auth" element={<Auth />} />
+          <Route path="/cart" element={<Cart />} />
           <Route path="/unauthorized" element={<UnAuthorize />} />
           <Route
             path="/seller/profile"
             element={
               <ProtectedRoute allowedRoles={["seller"]}>
                 <SellersProfile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/sellers/product-page"
+            element={
+              <ProtectedRoute allowedRoles={["seller"]}>
+                <AllProducts />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/sellers/add-product"
+            element={
+              <ProtectedRoute allowedRoles={["seller"]}>
+                <CreateProduct />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/sellers/update-product"
+            element={
+              <ProtectedRoute allowedRoles={["seller"]}>
+                <UpdateProduct />
               </ProtectedRoute>
             }
           />
