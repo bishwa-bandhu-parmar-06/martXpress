@@ -29,16 +29,39 @@ export const registerSellers = async (formDataObj) => {
   return response.data;
 };
 
-
-// functions for all role login or All in one Login 
-export const loginRole = async (formData) =>{
-  const response = await axiosInstance.post("/auth/login", formData);
+// functions for all role login or All in one Login
+export const loginRole = async (formData) => {
+  const response = await axiosInstance.post("/auth/login", formData, {
+    withCredentials: true,
+  });
   return response.data;
-}
-
+};
 
 // logout user function
 export const logoutUser = async () => {
-  const response = await axiosInstance.post("/auth/logout", {}, { withCredentials: true });
+  const response = await axiosInstance.post(
+    "/auth/logout",
+    {},
+    { withCredentials: true }
+  );
   return response.data;
+};
+
+export const createProduct = async (formData) => {
+  try {
+    const response = await axiosInstance.post(
+      "/sellers/create-product",
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+        withCredentials: true,
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error creating product:", error.response?.data || error);
+    throw error;
+  }
 };

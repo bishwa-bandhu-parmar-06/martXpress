@@ -235,7 +235,7 @@ const login = async (req, res) => {
     // ✅ Save session
     req.session.user = {
       id: foundUsers._id,
-      role: role
+      role: role,
     };
     // Convert user to object and delete password
     const userData = foundUsers.toObject();
@@ -318,17 +318,19 @@ const getUsersById = async (req, res) => {
   }
 };
 
-
 const logout = (req, res) => {
-  req.session.destroy(err => {
+  req.session.destroy((err) => {
     if (err) {
-      return res.status(500).json({ success: false, message: "Logout failed." });
+      return res
+        .status(500)
+        .json({ success: false, message: "Logout failed." });
     }
     res.clearCookie("connect.sid"); // default cookie name
-    return res.status(200).json({ success: true, message: "Logged out successfully." });
+    return res
+      .status(200)
+      .json({ success: true, message: "Logged out successfully." });
   });
 };
-
 
 module.exports = {
   registerUsers,
@@ -336,5 +338,5 @@ module.exports = {
   registerAdmin,
   login,
   logout,
-  getUsersById
+  getUsersById,
 };
