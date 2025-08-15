@@ -1,31 +1,28 @@
 const adminModel = require("../models/admin.model");
 const bcrypt = require("bcrypt");
+const sellerModel = require("../models/sellers.model");
 
-
-const getAdminProfile = async (req,res) => {
-try {
+const getAdminProfile = async (req, res) => {
+  try {
     const admin = await adminModel.findById(req.userId);
     if (!admin) {
       return res
         .status(200)
         .json({ status: 500, success: false, message: "Admin not found" });
     }
-    return res
-      .status(200)
-      .json({
-        status: 200,
-        success: true,
-        message: "Fetched Successful.",
-        admin: admin,
-      });
+    return res.status(200).json({
+      status: 200,
+      success: true,
+      message: "Fetched Successful.",
+      admin: admin,
+    });
   } catch (error) {
     console.log("While getting Admin Profile : ", error);
     res
       .status(200)
       .json({ status: 500, success: false, message: "Internal Server Error." });
   }
-}
-
+};
 
 const updateAdminDetails = async (req, res) => {
   try {
@@ -39,7 +36,7 @@ const updateAdminDetails = async (req, res) => {
       address: { street, city, district, state, country, pincode } = {},
     } = req.body;
 
-    const profileImage = req.file?.path; 
+    const profileImage = req.file?.path;
     if (password !== confirmPassword) {
       return res.status(200).json({
         status: 500,
@@ -90,4 +87,21 @@ const updateAdminDetails = async (req, res) => {
       .json({ status: 500, success: false, message: "Internal Server Error" });
   }
 };
-module.exports = {getAdminProfile, updateAdminDetails};
+
+// approve seller account
+const approveSeller = async (req, res) => {
+  const { sellerId } = req.body;
+  const seller = await sellerModel.findById(sellerId);
+
+  if (!seller) {
+    return res.status(200).json({ status: 404, message: "Seller not found." });
+  }
+
+  seller.status = "Approved";
+  await seller.save();
+
+  res
+    .status(200)
+    .json({ status: 200, message: "Seller approved successfully." });
+};
+module.exports = { getAdminProfile, updateAdminDetails, approveSeller };

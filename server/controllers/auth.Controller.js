@@ -2,72 +2,113 @@
 const userModel = require("../models/users.model");
 const sellerModel = require("../models/sellers.model");
 const adminModel = require("../models/admin.model");
+const otpModel = require("../models/otpModel.js");
 
+const  validateLoginEligibility  = require("../utils/userValidation.js");
+// otp generator packages
+const otpGenerator = require("otp-generator");
+
+// token generator packages
 const jwt = require("jsonwebtoken");
+// password hashin packages
 const bcrypt = require("bcrypt");
 
 // importing send email functions
-// const sendEmail = require("../utils/emails/sendEmail");
-// const {
-//   welcomeTemplate,
-// } = require("../utils/emails/templates/welcomeEmailTemplates");
-// making controller or method or function to register users
+const sendEmail = require("../utils/emails/sendEmail");
+
+// importing email templates
+const {
+  welcomeTemplate,
+} = require("../utils/emails/templates/welcomeEmailTemplates");
+const { otpTemplate } = require("../utils/emails/templates/otpTemplates");
+
+// users register controllers
 const registerUsers = async (req, res) => {
   try {
     const { name, email, password, confirmPassword } = req.body;
 
+    // 1️⃣ Basic validation
     if (!name || !email || !password || !confirmPassword) {
       return res.status(200).json({
-        status: 500,
+        status: 400,
         success: false,
-        message: "All fields must be Provided.",
+        message: "All fields must be provided.",
       });
     }
-    if (!(password === confirmPassword)) {
+    if (password !== confirmPassword) {
       return res.status(200).json({
-        status: 500,
+        status: 400,
         success: false,
-        message: "Password and confirmPassword Must be same.",
+        message: "Password and Confirm Password must match.",
       });
     }
 
-    // Check email in all collections
+    // 2️⃣ Check email in all collections
     const userExists = await userModel.findOne({ email });
     const sellerExists = await sellerModel.findOne({ email });
     const adminExists = await adminModel.findOne({ email });
 
-    if (userExists || sellerExists || adminExists) {
-      return res.status(200).json({
-        status: 400,
-        success: false,
-        message: "This email is already registered with another role.",
-      });
+    const found = userExists || sellerExists || adminExists;
+
+    if (found) {
+      if (found.verifiedEmail) {
+        return res.status(200).json({
+          status: 404,
+          success: false,
+          message: "This email is already registered with another role.",
+        });
+      } else {
+        return res.status(200).json({
+          status: 404,
+          success: true,
+          message:
+            "This email is already registered but not verified. Please use 'Forgot Password' to verify your account.",
+        });
+      }
     }
 
+    // 3️⃣ Email doesn't exist → create unverified user with OTP
     const hashedPassword = await bcrypt.hash(password, 10);
+
+    const otp = otpGenerator.generate(6, {
+      digits: true,
+      upperCaseAlphabets: false,
+      lowerCaseAlphabets: false,
+      specialChars: false,
+    });
+    const hashedOtp = await bcrypt.hash(otp, 10);
 
     const newUser = await userModel.create({
       name,
       email,
       password: hashedPassword,
       confirmPassword: hashedPassword,
+      otp: hashedOtp,
+      otpExpiry: Date.now() + 5 * 60 * 1000,
     });
 
-    await newUser.save();
+    await otpModel.create({
+      usersId: newUser._id,
+      email: newUser.email,
+      otp: hashedOtp,
+      otpExpiry: Date.now() + 5 * 60 * 1000,
+      role: "User",
+    });
 
-    // Send Welcome Email
-    // const subject = "Thank You for Registring";
-    // const html = welcomeTemplate(newUser.name);
-    // await sendEmail(newUser.email, subject, html);
+    // 4️⃣ Send OTP email
+    await sendEmail(
+      email,
+      "MartXpress OTP Verification",
+      otpTemplate(name, otp)
+    );
 
     return res.status(200).json({
       status: 200,
       success: true,
-      message: "User Registered Successfully.",
-      users: newUser,
+      message: "OTP sent successfully to your email.",
     });
   } catch (error) {
-    console.error("Getting error While Register Users: ", error);
+    console.error("Error while registering user:", error);
     res.status(200).json({
       status: 500,
       success: false,
@@ -94,31 +135,65 @@ const registerSeller = async (req, res) => {
     const sellerExists = await sellerModel.findOne({ email });
     const adminExists = await adminModel.findOne({ email });
 
-    if (userExists || sellerExists || adminExists) {
-      return res.status(200).json({
-        status: 400,
-        success: false,
-        message: "This email is already registered with another role.",
-      });
+    const found = userExists || sellerExists || adminExists;
+
+    if (found) {
+      if (found.verifiedEmail) {
+        return res.status(200).json({
+          status: 404,
+          success: false,
+          message: "This email is already registered with another role.",
+        });
+      } else {
+        return res.status(200).json({
+          status: 404,
+          success: true,
+          message:
+            "This email is already registered but not verified. Please use 'Forgot Password' to verify your account.",
+        });
+      }
     }
+
+    // 3️⃣ Email doesn't exist → create unverified user with OTP
     const hashedPassword = await bcrypt.hash(password, 10);
+
+    const otp = otpGenerator.generate(6, {
+      digits: true,
+      upperCaseAlphabets: false,
+      lowerCaseAlphabets: false,
+      specialChars: false,
+    });
+    const hashedOtp = await bcrypt.hash(otp, 10);
+
     const newSeller = await sellerModel.create({
       name,
       email,
+      gst,
       password: hashedPassword,
       confirmPassword: hashedPassword,
-      gst: {
-        gst_Number,
-        ...(gst_Certificate && { gst_Certificate }),
-      },
+      otp: hashedOtp,
+      otpExpiry: Date.now() + 5 * 60 * 1000,
     });
 
-    await newSeller.save();
+    await otpModel.create({
+      usersId: newSeller._id,
+      email: newSeller.email,
+      otp: hashedOtp,
+      otpExpiry: Date.now() + 5 * 60 * 1000,
+      role: "Seller",
+    });
+
+    // 4️⃣ Send OTP email
+    await sendEmail(
+      email,
+      "MartXpress OTP Verification",
+      otpTemplate(name, otp)
+    );
+
     return res.status(200).json({
       status: 200,
       success: true,
-      message: "Seller register Successfull.",
-      sellers: newSeller,
+      message: "Email Sent Successfully.",
     });
   } catch (error) {
     console.error("While Registering Company or Seller : ", error);
@@ -130,56 +205,146 @@ const registerSeller = async (req, res) => {
   }
 };
 
-// register admin
 const registerAdmin = async (req, res) => {
   try {
     const { name, email, password, confirmPassword } = req.body;
+
+    // 1️⃣ Basic validation
     if (!name || !email || !password || !confirmPassword) {
-      return res.status(200).json({
-        status: 500,
+      return res.status(400).json({
         success: false,
-        message: "All credential must be provided",
+        message: "All credentials must be provided.",
+      });
+    }
+    if (password !== confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Password and Confirm Password must match.",
       });
     }
 
-    // Check email in all collections
+    // 2️⃣ Check if email exists in any role
     const userExists = await userModel.findOne({ email });
     const sellerExists = await sellerModel.findOne({ email });
     const adminExists = await adminModel.findOne({ email });
 
     if (userExists || sellerExists || adminExists) {
-      return res.status(200).json({
-        status: 400,
+      return res.status(400).json({
         success: false,
         message: "This email is already registered with another role.",
       });
     }
 
+    // 3️⃣ Create admin
     const hashedPassword = await bcrypt.hash(password, 10);
+    const otp = otpGenerator.generate(6, {
+      digits: true,
+      upperCaseAlphabets: false,
+      lowerCaseAlphabets: false,
+      specialChars: false,
+    });
+    const hashedOtp = await bcrypt.hash(otp, 10);
+
     const newAdmin = await adminModel.create({
       name,
       email,
       password: hashedPassword,
       confirmPassword: hashedPassword,
+      otp: hashedOtp,
+      otpExpiry: Date.now() + 5 * 60 * 1000,
     });
-    await newAdmin.save();
+    await otpModel.create({
+      usersId: newAdmin._id,
+      email: newAdmin.email,
+      otp: hashedOtp,
+      otpExpiry: Date.now() + 5 * 60 * 1000,
+      role: "Admin",
+    });
+
+    // 4️⃣ Send OTP email
+    await sendEmail(
+      email,
+      "MartXpress OTP Verification",
+      otpTemplate(name, otp)
+    );
+
     return res.status(200).json({
-      status: 200,
       success: true,
-      message: "Admin Registered Successfully.",
+      message: "Email Sent successfully.",
     });
   } catch (error) {
-    console.error("While Registering admin: ", error);
-    return res.status(200).json({
-      status: 500,
+    console.error("While Registering admin:", error);
+    return res.status(500).json({
       success: false,
-      message: "Internal Server Error. register admin",
+      message: "Internal Server Error while registering admin.",
     });
   }
 };
+// validate otp
+const roleModels = {
+  User: userModel,
+  Seller: sellerModel,
+  Admin: adminModel,
+};
 
+const validateOtp = async (req, res) => {
+  try {
+    const { email, otp, role } = req.body;
+
+    // 1️⃣ Check role is valid
+    if (!["User", "Seller", "Admin"].includes(role)) {
+      return res
+        .status(200)
+        .json({ status: 400, success: false, message: "Invalid role" });
+    }
+
+    // 2️⃣ Find OTP record
+    const otpRecord = await otpModel.findOne({ email, role });
+    if (!otpRecord) {
+      return res
+        .status(200)
+        .json({ status: 400, success: false, message: "OTP not found" });
+    }
+
+    // 3️⃣ Check expiry
+    if (Date.now() > otpRecord.otpExpiry) {
+      return res
+        .status(200)
+        .json({ status: 400, success: false, message: "OTP expired" });
+    }
+
+    // 4️⃣ Compare OTP
+    const isMatch = await bcrypt.compare(otp, otpRecord.otp);
+    if (!isMatch) {
+      return res
+        .status(200)
+        .json({ status: 400, success: false, message: "Invalid OTP" });
+    }
+
+    // 5️⃣ Mark email as verified in the correct model
+    const Model = roleModels[role];
+    await Model.updateOne(
+      { _id: otpRecord.usersId },
+      { $set: { verifiedEmail: true } }
+    );
+
+    // 6️⃣ Delete OTP record after success
+    await otpModel.deleteOne({ _id: otpRecord._id });
+
+    return res.status(200).json({
+      status: 200,
+      success: true,
+      message: "Email verified successfully",
+    });
+  } catch (error) {
+    console.error("OTP validation error:", error);
+    res
+      .status(200)
+      .json({ status: 500, success: false, message: "Internal server error" });
+  }
+};
 // controller to login
-const login = async (req, res) => {
+const loginWithPassword = async (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) {
@@ -206,13 +371,13 @@ const login = async (req, res) => {
     let role = " ";
     if (users) {
       foundUsers = users;
-      role = "users";
+      role = "User";
     } else if (sellers) {
       foundUsers = sellers;
-      role = "sellers";
+      role = "Seller";
     } else if (admin) {
       foundUsers = admin;
-      role = "admin";
+      role = "Admin";
     }
 
     // password = entred password
@@ -224,14 +389,11 @@ const login = async (req, res) => {
         .json({ status: 500, success: false, message: "Invalid credentials." });
     }
 
-    // const token = jwt.sign(
-    //   { userId: foundUsers._id, role },
-    //   process.env.JWT_SECRET,
-    //   {
-    //     expiresIn: "1h",
-    //   }
-    // );
-
+    /// ✅ Validate eligibility
+    const validation = validateLoginEligibility(foundUsers, role);
+    if (!validation.success) {
+      return res.status(validation.status).json(validation);
+    }
     // ✅ Save session
     req.session.user = {
       id: foundUsers._id,
@@ -258,63 +420,151 @@ const login = async (req, res) => {
   }
 };
 
-// get users by their id :
-const getUsersById = async (req, res) => {
+// login with the email otp
+const loginWithEmailOtp = async (req, res) => {
   try {
-    const { usersId } = req.body; // Check if usersId is provided
-    if (!usersId) {
-      return res.status(400).json({
+    const { email } = req.body;
+
+    // 1️⃣ User exists check
+    const user =
+      (await userModel.findOne({ email })) ||
+      (await sellerModel.findOne({ email })) ||
+      (await adminModel.findOne({ email }));
+
+    if (!user) {
+      return res.status(200).json({
+        status: 404,
+        success: false,
+        message: "Email does not exist, please register.",
+      });
+    }
+
+    // ✅ Eligibility check before sending OTP
+    const validation = validateLoginEligibility(user);
+    if (!validation.success) {
+      return res.status(validation.status).json(validation);
+    }
+    // 2️⃣ OTP generate
+    const otp = otpGenerator.generate(6, {
+      digits: true,
+      upperCaseAlphabets: false,
+      lowerCaseAlphabets: false,
+      specialChars: false,
+    });
+
+    const hashedOtp = await bcrypt.hash(otp, 10);
+
+    // 3️⃣ Purana OTP delete (same email ke liye)
+    await otpModel.deleteMany({ email });
+
+    // 4️⃣ New OTP save
+    await otpModel.create({
+      usersId: user._id,
+      email,
+      otp: hashedOtp,
+      otpExpiry: Date.now() + 5 * 60 * 1000,
+      role: user.role,
+    });
+
+    // 5️⃣ Send OTP via email
+    await sendEmail(email, "Your Login OTP", otpTemplate(user.name, otp));
+
+    return res.status(200).json({
+      status: 200,
+      success: true,
+      message: "OTP sent to your email.",
+    });
+  } catch (error) {
+    console.error("Error While Sending OTP:", error);
+    return res
+      .status(200)
+      .json({ status: 500, success: false, message: "Internal Server Error" });
+  }
+};
+
+// verify the otp for login
+const verifyLoginotp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    // 1️⃣ OTP record find
+    const otpRecord = await otpModel.findOne({ email });
+    if (!otpRecord) {
+      return res.status(200).json({
+        status: 404,
+        success: false,
+        message: "OTP for this email does not exist.",
+      });
+    }
+
+    // 2️⃣ Expiry check
+    if (Date.now() > otpRecord.otpExpiry) {
+      await otpModel.deleteOne({ _id: otpRecord._id }); // expired delete
+      return res.status(200).json({
         status: 400,
         success: false,
-        message: "User ID must be provided.",
+        message: "OTP expired. Please request again.",
       });
     }
 
-    // Search for the user in all three models concurrently
-    const [user, seller, admin] = await Promise.all([
-      userModel.findById(usersId),
-      sellerModel.findById(usersId),
-      adminModel.findById(usersId),
-    ]);
-
-    let foundUser = null;
-    let role = null;
-
-    if (user) {
-      foundUser = user;
-      role = "users";
-    } else if (seller) {
-      foundUser = seller;
-      role = "sellers";
-    } else if (admin) {
-      foundUser = admin;
-      role = "admin";
-    }
-
-    if (foundUser) {
-      const userData = foundUser.toObject();
-      delete userData.password;
-      delete userData.confirmPassword;
-
+    // 3️⃣ OTP compare
+    const isMatch = await bcrypt.compare(otp, otpRecord.otp);
+    if (!isMatch) {
       return res.status(200).json({
-        status: 200,
-        success: true,
-        message: `${role} found successfully.`,
-        user: userData,
-        role: role,
+        status: 400,
+        success: false,
+        message: "Invalid OTP.",
       });
-    } else {
-      return res.status(404).json({
+    }
+
+    // 4️⃣ Role ke hisaab se user find
+    let Model;
+    if (otpRecord.role === "User") Model = userModel;
+    else if (otpRecord.role === "Seller") Model = sellerModel;
+    else if (otpRecord.role === "Admin") Model = adminModel;
+
+    const user = await Model.findById(otpRecord.usersId);
+    if (!user) {
+      return res.status(200).json({
         status: 404,
         success: false,
         message: "User not found.",
       });
     }
+
+    // ✅ Validate eligibility
+    const validation = validateLoginEligibility(user, otpRecord.role);
+    if (!validation.success) {
+      return res.status(validation.status).json(validation);
+    }
+
+    // 7️⃣ Session / token create
+    req.session.user = {
+      id: user._id,
+      role: otpRecord.role,
+    };
+
+    // 8️⃣ OTP delete after use
+    await otpModel.deleteOne({ _id: otpRecord._id });
+
+    // 9️⃣ Success response (password remove for safety)
+    const safeUser = user.toObject();
+    delete safeUser.password;
+    delete safeUser.confirmPassword;
+
+    return res.status(200).json({
+      status: 200,
+      success: true,
+      message: "Login successful.",
+      user: safeUser,
+    });
   } catch (error) {
-    console.error("error From get Users bY Id : ", error);
-    res
-      .status(200)
-      .json({ status: 500, success: false, message: "Internal Server Error" });
+    console.error("Error While Verifying Login Otp:", error);
+    return res.status(200).json({
+      status: 500,
+      success: false,
+      message: "Internal Server Error.",
+    });
   }
 };
 
@@ -325,7 +575,7 @@ const logout = (req, res) => {
         .status(500)
         .json({ success: false, message: "Logout failed." });
     }
-    res.clearCookie("connect.sid"); // default cookie name
+    res.clearCookie("connect.sid");
     return res
       .status(200)
       .json({ success: true, message: "Logged out successfully." });
@@ -336,7 +586,10 @@ module.exports = {
   registerUsers,
   registerSeller,
   registerAdmin,
-  login,
+  loginWithPassword,
+  loginWithEmailOtp,
+  verifyLoginotp,
   logout,
-  getUsersById,
+  validateOtp,
+  // getUsersById,
 };

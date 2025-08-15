@@ -1,13 +1,11 @@
-
-
 const userModel = require("../models/users.model");
 const sellerModel = require("../models/sellers.model");
 const adminModel = require("../models/admin.model");
 
 const roleModelMap = {
-  users: userModel,
-  sellers: sellerModel,
-  admin: adminModel,
+  User: userModel,
+  Seller: sellerModel,
+  Admin: adminModel,
 };
 
 const verifySession = async (req, res, next) => {

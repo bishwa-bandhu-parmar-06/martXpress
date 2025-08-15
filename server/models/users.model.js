@@ -8,7 +8,11 @@ const userSchema = new Schema({
     type: String,
     required: true,
   },
-  email: { type: String, required: true ,unique: true},
+  email: { type: String, required: true, unique: true },
+  verifiedEmail: {
+    type: Boolean,
+    default: false
+  },
   mobile: { type: String, require: false },
   password: { type: String, required: true },
   confirmPassword: { type: String, required: true },
@@ -19,15 +23,15 @@ const userSchema = new Schema({
     district: { type: String },
     state: { type: String },
     country: {
-      type: String
+      type: String,
     },
     pincode: { type: String },
   },
   role: {
-        type: String,
-        default: "users",
-        enum: ["seller", "users", "admin"]
-    }
+    type: String,
+    default: "User",
+    enum: ["Seller", "User", "Admin"],
+  },
 });
 
 const User = mongoose.model(modelConstant.USER, userSchema);
