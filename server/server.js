@@ -64,7 +64,7 @@ app.use("/admin", adminRoutes);
 
 // ✅ 7. Default route
 app.get("/", (req, res) => {
-  res.send("🚀 Server is up and running!");
+  res.send("🚀 martXpress is running!");
 });
 
 // ✅ 8. Start server
