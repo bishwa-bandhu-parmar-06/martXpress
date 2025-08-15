@@ -4,7 +4,7 @@ const sellerModel = require("../models/sellers.model");
 const adminModel = require("../models/admin.model");
 const otpModel = require("../models/otpModel.js");
 
-const  validateLoginEligibility  = require("../utils/userValidation.js");
+const validateLoginEligibility = require("../utils/userValidation.js");
 // otp generator packages
 const otpGenerator = require("otp-generator");
 
@@ -582,6 +582,281 @@ const logout = (req, res) => {
   });
 };
 
+// forget password or reset password link
+
+const forgetPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    // 1️⃣ Email exist check in all models
+    const user =
+      (await userModel.findOne({ email })) ||
+      (await sellerModel.findOne({ email })) ||
+      (await adminModel.findOne({ email }));
+
+    if (!user) {
+      return res.status(200).json({
+        status: 404,
+        success: false,
+        message: "Email does not exist.",
+      });
+    }
+
+    // 2️⃣ Generate OTP
+    const otp = otpGenerator.generate(6, {
+      digits: true,
+      upperCaseAlphabets: false,
+      lowerCaseAlphabets: false,
+      specialChars: false,
+    });
+    const hashedOtp = await bcrypt.hash(otp, 10);
+
+    // 3️⃣ Delete old OTP
+    await otpModel.deleteMany({ email });
+
+    // 4️⃣ Save new OTP
+    await otpModel.create({
+      usersId: user._id,
+      email,
+      otp: hashedOtp,
+      otpExpiry: Date.now() + 5 * 60 * 1000,
+      role: user.role,
+    });
+
+    // 5️⃣ Send Email
+    await sendEmail(
+      email,
+      "Your Password Reset OTP",
+      otpTemplate(user.name, otp)
+    );
+
+    return res.status(200).json({
+      status: 200,
+      success: true,
+      message: "OTP sent to your email.",
+    });
+  } catch (error) {
+    console.error("Error while sending OTP:", error);
+    return res.status(500).json({
+      status: 500,
+      success: false,
+      message: "Internal Server Error",
+    });
+  }
+};
+
+// verify otp
+const verifyResetOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    // 1️⃣ OTP find
+    const otpRecord = await otpModel.findOne({ email });
+    if (!otpRecord) {
+      return res
+        .status(200)
+        .json({ status: 404, success: false, message: "OTP not found." });
+    }
+
+    // 2️⃣ Expiry check
+    if (Date.now() > otpRecord.otpExpiry) {
+      await otpModel.deleteOne({ _id: otpRecord._id });
+      return res
+        .status(200)
+        .json({ status: 400, success: false, message: "OTP expired." });
+    }
+
+    // 3️⃣ Compare OTP
+    const isMatch = await bcrypt.compare(otp, otpRecord.otp);
+    if (!isMatch) {
+      return res
+        .status(200)
+        .json({ status: 400, success: false, message: "Invalid OTP." });
+    }
+
+    // 4️⃣ Get model based on role
+    let Model;
+    if (otpRecord.role === "User") Model = userModel;
+    else if (otpRecord.role === "Seller") Model = sellerModel;
+    else if (otpRecord.role === "Admin") Model = adminModel;
+
+    const user = await Model.findById(otpRecord.usersId);
+    if (!user) {
+      return res
+        .status(200)
+        .json({ status: 404, success: false, message: "User not found." });
+    }
+
+    // 5️⃣ Auto verify email if not verified
+    if (!user.verifiedEmail) {
+      user.verifiedEmail = true;
+      await user.save();
+    }
+
+    // 6️⃣ Delete OTP after verification
+    await otpModel.deleteOne({ _id: otpRecord._id });
+
+    // 7️⃣ Success
+    return res.status(200).json({
+      status: 200,
+      success: true,
+      message: "OTP verified. You can now reset your password.",
+      userId: user._id,
+      role: user.role,
+    });
+  } catch (error) {
+    console.error("Error while verifying OTP:", error);
+    return res
+      .status(500)
+      .json({ status: 500, success: false, message: "Internal Server Error" });
+  }
+};
+const resetPassword = async (req, res) => {
+  try {
+    const { userId, role, newPassword } = req.body;
+
+    let Model;
+    if (role === "User") Model = userModel;
+    else if (role === "Seller") Model = sellerModel;
+    else if (role === "Admin") Model = adminModel;
+
+    const user = await Model.findById(userId);
+    if (!user) {
+      return res
+        .status(200)
+        .json({ status: 404, success: false, message: "User not found." });
+    }
+
+    user.password = await bcrypt.hash(newPassword, 10);
+    await user.save();
+
+    return res.status(200).json({
+      status: 200,
+      success: true,
+      message: "Password reset successful.",
+    });
+  } catch (error) {
+    console.error("Error while resetting password:", error);
+    return res
+      .status(500)
+      .json({ status: 500, success: false, message: "Internal Server Error" });
+  }
+};
+
+// const forgetPasswordLink = async (req, res) => {
+//   try {
+//     const { email } = req.body;
+
+//     // 1️⃣ Check user
+//     const user =
+//       (await userModel.findOne({ email })) ||
+//       (await sellerModel.findOne({ email })) ||
+//       (await adminModel.findOne({ email }));
+
+//     if (!user) {
+//       return res
+//         .status(200)
+//         .json({ status: 404, message: "Email does not exist." });
+//     }
+
+//     // 2️⃣ Create JWT token (expires in 15 min)
+//     const token = jwt.sign(
+//       { userId: user._id, role: user.role },
+//       process.env.RESET_PASSWORD_SECRET,
+//       { expiresIn: "15m" }
+//     );
+
+//     // 3️⃣ Reset link
+//     const resetLink = `http://localhost:5173/reset-password?token=${token}`;
+
+//     // 4️⃣ Send email
+//     await sendEmail(
+//       email,
+//       "Password Reset Link",
+//       `
+//       <p>Hi ${user.name},</p>
+//       <p>Click the link below to reset your password (valid for 15 minutes):</p>
+//       <a href="${resetLink}">${resetLink}</a>
+//     `
+//     );
+
+//     return res.status(200).json({
+//       status: 200,
+//       message: "Password reset link sent to your email.",
+//     });
+//   } catch (error) {
+//     console.error("Error in forgetPasswordLink:", error);
+//     res.status(500).json({ status: 500, message: "Internal Server Error" });
+//   }
+// };
+
+// const verifyResetLink = async (req, res) => {
+//   try {
+//     const { token } = req.query;
+
+//     const decoded = jwt.verify(token, process.env.RESET_PASSWORD_SECRET);
+
+//     return res.status(200).json({
+//       status: 200,
+//       success: true,
+//       message: "Valid token",
+//       userId: decoded.userId,
+//       role: decoded.role,
+//     });
+//   } catch (error) {
+//     return res
+//       .status(400)
+//       .json({
+//         status: 400,
+//         success: false,
+//         message: "Invalid or expired link",
+//       });
+//   }
+// };
+
+// const resetPasswordByLink = async (req, res) => {
+//   try {
+//     const { token, newPassword } = req.body;
+
+//     // 1️⃣ Token verify
+//     const decoded = jwt.verify(token, process.env.RESET_PASSWORD_SECRET);
+
+//     // 2️⃣ Get correct model
+//     let Model;
+//     if (decoded.role === "User") Model = userModel;
+//     else if (decoded.role === "Seller") Model = sellerModel;
+//     else if (decoded.role === "Admin") Model = adminModel;
+
+//     // 3️⃣ Find user
+//     const user = await Model.findById(decoded.userId);
+//     if (!user) {
+//       return res.status(404).json({ status: 404, message: "User not found" });
+//     }
+
+//     // 4️⃣ Update password
+//     user.password = await bcrypt.hash(newPassword, 10);
+//     if (!user.verifiedEmail) {
+//       user.verifiedEmail = true; // verify email if not verified
+//     }
+//     await user.save();
+
+//     return res
+//       .status(200)
+//       .json({ status: 200, message: "Password reset successfully" });
+//   } catch (error) {
+//     console.error("Error in resetPasswordByLink:", error);
+//     return res
+//       .status(400)
+//       .json({ status: 400, message: "Invalid or expired token" });
+//   }
+// };
+// POST /auth/forget-password-link → { email }
+// → Email me reset link send hota hai.
+
+// GET /auth/verify-reset-link?token=xxx
+// → Token valid hai to frontend password reset form dikhata hai.
+
+// POST /auth/reset-password-by-link → { token, newPassword }
 module.exports = {
   registerUsers,
   registerSeller,
@@ -591,5 +866,7 @@ module.exports = {
   verifyLoginotp,
   logout,
   validateOtp,
-  // getUsersById,
+  forgetPassword,
+  verifyResetOtp,
+  resetPassword,
 };
