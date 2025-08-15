@@ -711,23 +711,57 @@ const verifyResetOtp = async (req, res) => {
       .json({ status: 500, success: false, message: "Internal Server Error" });
   }
 };
+
 const resetPassword = async (req, res) => {
   try {
-    const { userId, role, newPassword } = req.body;
+    const { userId, role, newPassword, confirmPassword } = req.body;
 
+    // ✅ 1. Password match check
+    if (!newPassword || !confirmPassword) {
+      return res.status(200).json({
+        status: 400,
+        success: false,
+        message: "Both password and confirm password are required.",
+      });
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.status(200).json({
+        status: 400,
+        success: false,
+        message: "Password and confirm password do not match.",
+      });
+    }
+
+    // ✅ 2. Model select based on role
     let Model;
     if (role === "User") Model = userModel;
     else if (role === "Seller") Model = sellerModel;
     else if (role === "Admin") Model = adminModel;
 
-    const user = await Model.findById(userId);
-    if (!user) {
-      return res
-        .status(200)
-        .json({ status: 404, success: false, message: "User not found." });
+    if (!Model) {
+      return res.status(200).json({
+        status: 400,
+        success: false,
+        message: "Invalid role.",
+      });
     }
 
-    user.password = await bcrypt.hash(newPassword, 10);
+    // ✅ 3. Find user
+    const user = await Model.findById(userId);
+    if (!user) {
+      return res.status(200).json({
+        status: 404,
+        success: false,
+        message: "User not found.",
+      });
+    }
+
+    // ✅ 4. Hash and save both fields
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+    user.confirmPassword = hashedPassword; // Storing same hash (if you really store confirmPassword)
+
     await user.save();
 
     return res.status(200).json({
@@ -737,11 +771,14 @@ const resetPassword = async (req, res) => {
     });
   } catch (error) {
     console.error("Error while resetting password:", error);
-    return res
-      .status(500)
-      .json({ status: 500, success: false, message: "Internal Server Error" });
+    return res.status(500).json({
+      status: 500,
+      success: false,
+      message: "Internal Server Error",
+    });
   }
 };
+
 
 // const forgetPasswordLink = async (req, res) => {
 //   try {
