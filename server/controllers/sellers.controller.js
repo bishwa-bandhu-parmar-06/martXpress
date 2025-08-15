@@ -87,4 +87,7 @@ const updateSellersDetails = async (req, res) => {
       .json({ status: 500, success: false, message: "Internal Server Error" });
   }
 };
+
+
+
 module.exports = { getSellersProfile, updateSellersDetails };

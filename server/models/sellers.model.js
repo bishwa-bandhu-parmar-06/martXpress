@@ -10,6 +10,10 @@ const sellerSchema = new mongoose.Schema({
     required: true,
     unique: true,
   },
+  verifiedEmail: {
+    type: Boolean,
+    default: false,
+  },
   password: {
     type: String,
     required: true,
@@ -64,8 +68,13 @@ const sellerSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    default: "seller",
-    enum: ["seller", "users", "admin"],
+    default: "Seller",
+    enum: ["Seller", "User", "Admin"],
+  },
+  status: {
+    type: String,
+    enum: ["Pending", "Approved", "Rejected"],
+    default: "Pending",
   },
 });
 
