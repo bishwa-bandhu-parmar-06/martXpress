@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+/* :root {
+  --primary-color: #F97E1D;  
+  --secondary-color: #075E8B;
+  --text-color: #FAFAF8;
+} */
+
+@theme {
+  /* This creates classes like text-primary, bg-primary, border-primary */
+  --color-primary: #F97E1D;
+  
+  /* This creates classes like text-secondary, bg-secondary */
+  --color-secondary: #075E8B;
+  
+  /* This creates classes like text-customText, bg-customText */
+  --color-customText: gray; 
+}
+
+/* 👇 Add this line to enable class-based dark mode */
+@variant dark (&:where(.dark, .dark *));
+
+
