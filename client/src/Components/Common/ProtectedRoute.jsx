@@ -6,7 +6,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   const isAuth = checkAuth();
   const role = getUserRole();
 
-  console.log("ProtectedRoute :", isAuth, role);
+  // console.log("ProtectedRoute :", isAuth, role);
 
   //  Not logged in
   if (!isAuth) {

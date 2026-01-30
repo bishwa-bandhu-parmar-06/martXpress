@@ -56,7 +56,7 @@ app.use(
   rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 100,
-  })
+  }),
 );
 
 /* =========================
@@ -84,12 +84,7 @@ await apolloServer.start();
    GRAPHQL MIDDLEWARE
    (bodyParser REQUIRED here)
 ========================= */
-app.use(
-  "/graphql",
-  bodyParser.json(),
-  expressMiddleware(apolloServer)
-);
-
+app.use("/graphql", bodyParser.json(), expressMiddleware(apolloServer));
 
 /* =========================
    REST API BODY PARSER
@@ -124,6 +119,6 @@ app.use(errorMiddleware);
 ========================= */
 app.listen(port, () => {
   console.log(
-    `Server is running on port : http://localhost:${port}`.green.bold
+    `Server is running on port : http://localhost:${port}`.green.bold,
   );
 });

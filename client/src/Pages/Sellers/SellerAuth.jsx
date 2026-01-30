@@ -113,7 +113,7 @@ const SellerAuth = () => {
       }
     } catch (err) {
       setError(
-        err.message || (isLogin ? "Login failed" : "Registration failed")
+        err.message || (isLogin ? "Login failed" : "Registration failed"),
       );
     } finally {
       setLoading(false);
@@ -385,42 +385,45 @@ const SellerAuth = () => {
                 <div className="transition-all duration-300">
                   {isLogin ? (
                     /* Login Form */
+
                     <div className="space-y-6">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Business Email
-                        </label>
-                        <input
-                          type="email"
-                          name="email"
-                          placeholder="Enter your business email"
-                          value={formData.email}
-                          onChange={handleChange}
-                          className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg 
+                      <form className="space-y-6" onSubmit={handleSubmit}>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Business Email
+                          </label>
+                          <input
+                            type="email"
+                            name="email"
+                            placeholder="Enter your business email"
+                            value={formData.email}
+                            onChange={handleChange}
+                            className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg 
                             bg-white dark:bg-gray-700 text-gray-900 dark:text-white
                             focus:ring-2 focus:ring-primary/50 focus:border-primary
                             outline-none transition-all duration-200"
-                          required
-                        />
-                      </div>
+                            required
+                          />
+                        </div>
 
-                      <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full bg-primary hover:bg-primary/90 text-white font-semibold 
+                        <button
+                          type="submit"
+                          disabled={loading}
+                          className="w-full bg-primary hover:bg-primary/90 text-white font-semibold 
                           py-3 px-4 rounded-lg transition-all duration-200
                           transform hover:scale-[1.02] active:scale-[0.98]
                           disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
-                      >
-                        {loading ? (
-                          <span className="flex items-center justify-center gap-2">
-                            <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                            Sending OTP...
-                          </span>
-                        ) : (
-                          "Send OTP"
-                        )}
-                      </button>
+                        >
+                          {loading ? (
+                            <span className="flex items-center justify-center gap-2">
+                              <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                              Sending OTP...
+                            </span>
+                          ) : (
+                            "Send OTP"
+                          )}
+                        </button>
+                      </form>
                     </div>
                   ) : (
                     /* Registration Form */
@@ -724,27 +727,6 @@ const SellerAuth = () => {
           </div>
         </div>
       </div>
-
-      {/* Add CSS for grid pattern */}
-      <style jsx>{`
-        .bg-grid-pattern {
-          background-image: linear-gradient(
-              to right,
-              #e5e7eb 1px,
-              transparent 1px
-            ),
-            linear-gradient(to bottom, #e5e7eb 1px, transparent 1px);
-          background-size: 40px 40px;
-        }
-        .dark .bg-grid-pattern {
-          background-image: linear-gradient(
-              to right,
-              #374151 1px,
-              transparent 1px
-            ),
-            linear-gradient(to bottom, #374151 1px, transparent 1px);
-        }
-      `}</style>
     </div>
   );
 };

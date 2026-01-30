@@ -12,10 +12,8 @@ const LoginForm = ({ onSwitchToRegister, userType = "user" }) => {
     e.preventDefault();
     setLoading(true);
     setError("");
-
     try {
       const res = await login({ email });
-
       if (res.status !== 200) throw new Error(res.message);
 
       // Navigate to OTP verification with user type
@@ -23,8 +21,7 @@ const LoginForm = ({ onSwitchToRegister, userType = "user" }) => {
         state: {
           email,
           mode: "login",
-          // Pass user type for role-based redirection
-          userType: userType,
+          userType: res.role,
         },
       });
     } catch (err) {

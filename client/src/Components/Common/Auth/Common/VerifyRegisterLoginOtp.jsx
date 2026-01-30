@@ -66,7 +66,7 @@ const VerifyRegisterLoginOtp = () => {
   const getBackButtonPath = () => {
     if (role === "admin") return "/admins/auth";
     if (role === "seller")
-      return mode === "register" ? "/seller/register" : "/seller/login";
+      return mode === "register" ? "/sellers/auth" : "/seller/login";
     return mode === "register" ? "/register" : "/login";
   };
   return (

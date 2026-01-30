@@ -9,13 +9,11 @@ export const getAdminProfile = async (req, res) => {
   try {
     const { id } = req.user;
 
-
     const admin = await adminModel.findById(id).populate("addresses");
     if (!admin) {
       return res.status(404).json({ status: 404, message: "Admin not found" });
     }
 
-    
     res.status(200).json({
       status: 200,
       message: "Admin profile fetched successfully",
@@ -151,10 +149,11 @@ export const getSellerById = async (req, res) => {
 
 export const approveSeller = async (req, res) => {
   try {
+    const { sellerid } = req.params;
     const seller = await sellerModel.findByIdAndUpdate(
-      req.params.id,
+      sellerid,
       { verified: "approved" },
-      { new: true }
+      { new: true },
     );
     if (!seller)
       return res.status(404).json({ status: 404, message: "Seller not found" });
@@ -171,10 +170,11 @@ export const approveSeller = async (req, res) => {
 
 export const rejectSeller = async (req, res) => {
   try {
+    const { sellerid } = req.params;
     const seller = await sellerModel.findByIdAndUpdate(
-      req.params.id,
+      sellerid,
       { verified: "rejected" },
-      { new: true }
+      { new: true },
     );
     if (!seller)
       return res.status(404).json({ status: 404, message: "Seller not found" });
@@ -191,7 +191,8 @@ export const rejectSeller = async (req, res) => {
 
 export const deleteSeller = async (req, res) => {
   try {
-    const deleted = await sellerModel.findByIdAndDelete(req.params.id);
+    const { sellerid } = req.params;
+    const deleted = await sellerModel.findByIdAndDelete(sellerid);
     if (!deleted)
       return res.status(404).json({ status: 404, message: "Seller not found" });
 

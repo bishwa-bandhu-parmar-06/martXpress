@@ -12,7 +12,7 @@ import { generateAndSendOtp } from "../utils/otpHelper.js";
 export const login = async (req, res) => {
   try {
     const { email } = req.body;
-
+    console.log("From Frontend : ", email)
     if (!email) {
       return res.status(200).json({
         status: 400,

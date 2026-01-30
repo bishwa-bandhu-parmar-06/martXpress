@@ -19,5 +19,20 @@
 
 /* 👇 Add this line to enable class-based dark mode */
 @variant dark (&:where(.dark, .dark *));
+@layer base {
+  :root {
+    /* PRIMARY BUTTON */
+    --primary: 24 94% 54%;              /* Orange */
+    --primary-foreground: 0 0% 100%;
+
+    /* SECONDARY BUTTON */
+    --secondary: 203 92% 29%;           /* Blue */
+    --secondary-foreground: 0 0% 100%;
+
+    /* DESTRUCTIVE BUTTON */
+    --destructive: 0 84% 60%;           /* Red */
+    --destructive-foreground: 0 0% 100%;
+  }
+}
 
 

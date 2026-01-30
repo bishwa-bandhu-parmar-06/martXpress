@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+//SellersDashboard
+import React, { useEffect, useState } from "react";
 import {
   BarChart3,
   Package,
@@ -33,6 +34,12 @@ import {
   PieChart,
   Target,
 } from "lucide-react";
+import {
+  AddProductsForLoggedInSeller,
+  getAllProductsOfLoggedInSeller,
+} from "../../API/ProductsApi/productsAPI.js";
+
+import AddProduct from "../../Components/Products/AddProduct.jsx";
 
 const SellersDashboard = () => {
   // State for active tab
@@ -41,63 +48,35 @@ const SellersDashboard = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   // State for notification dropdown
   const [showNotifications, setShowNotifications] = useState(false);
-  // State for products
-  const [products] = useState([
-    {
-      id: 1,
-      name: "Wireless Headphones",
-      stock: 45,
-      price: 129.99,
-      sales: 1234,
-      rating: 4.5,
-      status: "active",
-    },
-    {
-      id: 2,
-      name: "Smart Watch Series 5",
-      stock: 12,
-      price: 299.99,
-      sales: 890,
-      rating: 4.8,
-      status: "active",
-    },
-    {
-      id: 3,
-      name: "USB-C Laptop Charger",
-      stock: 0,
-      price: 34.99,
-      sales: 2345,
-      rating: 4.2,
-      status: "out-of-stock",
-    },
-    {
-      id: 4,
-      name: "Ergonomic Office Chair",
-      stock: 7,
-      price: 249.99,
-      sales: 456,
-      rating: 4.7,
-      status: "active",
-    },
-    {
-      id: 5,
-      name: "Bluetooth Speaker",
-      stock: 23,
-      price: 89.99,
-      sales: 1567,
-      rating: 4.3,
-      status: "active",
-    },
-    {
-      id: 6,
-      name: "Gaming Mouse",
-      stock: 34,
-      price: 49.99,
-      sales: 2100,
-      rating: 4.6,
-      status: "active",
-    },
-  ]);
+  const [products, setProducts] = useState([]);
+
+  // !Function for Get All Products of Logged in Seller
+  const getAllProducts = async () => {
+    try {
+      const response = await getAllProductsOfLoggedInSeller();
+
+      setProducts(Array.isArray(response.products) ? response.products : []);
+
+      console.log("Seller Products:", response);
+    } catch (error) {
+      console.error("Error While Getting Products:", error);
+      setProducts([]);
+    }
+  };
+
+  useEffect(() => {
+    getAllProducts();
+  }, []);
+
+  // !Functions for Add Products
+  const handleAdditionOfProducts = async () => {
+    try {
+      const response = await AddProductsForLoggedInSeller();
+      console.log("Selled Products : ", response);
+    } catch (error) {
+      console.error("Error While Gettting All Products : ", error);
+    }
+  };
   // State for orders
   const [orders] = useState([
     {
@@ -603,54 +582,62 @@ const SellersDashboard = () => {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-200">
-                        {products.slice(0, 5).map((product) => (
-                          <tr key={product.id} className="hover:bg-gray-50">
-                            <td className="px-6 py-4">
-                              <div className="flex items-center">
-                                <div className="h-10 w-10 rounded bg-linear-to-r from-blue-100 to-indigo-100 flex items-center justify-center">
-                                  <Package className="h-5 w-5 text-indigo-600" />
-                                </div>
-                                <div className="ml-3">
-                                  <p className="text-sm font-medium text-gray-900">
-                                    {product.name}
-                                  </p>
-                                  <div className="flex items-center">
-                                    <Star className="h-3 w-3 text-yellow-400 fill-current" />
-                                    <span className="text-xs text-gray-500 ml-1">
-                                      {product.rating} ({product.sales} sold)
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4">
-                              <div className="text-sm text-gray-900">
-                                {product.stock} units
-                              </div>
-                            </td>
-                            <td className="px-6 py-4">
-                              <div className="text-sm font-medium text-gray-900">
-                                ${product.price}
-                              </div>
-                            </td>
-                            <td className="px-6 py-4">
-                              <StatusBadge status={product.status} />
-                            </td>
-                            <td className="px-6 py-4">
-                              <div className="flex space-x-2">
-                                <button className="p-1 text-gray-400 hover:text-blue-600">
-                                  <Eye className="h-4 w-4" />
-                                </button>
-                                <button className="p-1 text-gray-400 hover:text-green-600">
-                                  <Edit className="h-4 w-4" />
-                                </button>
-                                <button className="p-1 text-gray-400 hover:text-red-600">
-                                  <Trash2 className="h-4 w-4" />
-                                </button>
-                              </div>
+                        {products.length === 0 ? (
+                          <tr>
+                            <td
+                              colSpan={5}
+                              className="px-6 py-8 text-center text-gray-500 text-sm"
+                            >
+                              🚫 No products yet
                             </td>
                           </tr>
-                        ))}
+                        ) : (
+                          products.slice(0, 5).map((product) => (
+                            <tr key={product._id} className="hover:bg-gray-50">
+                              <td className="px-6 py-4">
+                                <div className="flex items-center">
+                                  <div className="h-10 w-10 rounded bg-linear-to-r from-blue-100 to-indigo-100 flex items-center justify-center">
+                                    <Package className="h-5 w-5 text-indigo-600" />
+                                  </div>
+                                  <div className="ml-3">
+                                    <p className="text-sm font-medium text-gray-900">
+                                      {product.name}
+                                    </p>
+                                    <div className="flex items-center">
+                                      <Star className="h-3 w-3 text-yellow-400 fill-current" />
+                                      <span className="text-xs text-gray-500 ml-1">
+                                        {product.rating ?? 0} (
+                                        {product.sales ?? 0} sold)
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </td>
+
+                              <td className="px-6 py-4">
+                                {product.stock} units
+                              </td>
+                              <td className="px-6 py-4">₹{product.price}</td>
+                              <td className="px-6 py-4">
+                                <StatusBadge status={product.status} />
+                              </td>
+
+                              <td className="px-6 py-4">
+                                <div className="flex space-x-2">
+                                  <button className="p-1 text-gray-400 hover:text-blue-600">
+                                    <Eye className="h-4 w-4" />
+                                  </button>
+                                  <button className="p-1 text-gray-400 hover:text-green-600">
+                                    <Edit className="h-4 w-4" />
+                                  </button>
+                                  <button className="p-1 text-gray-400 hover:text-red-600">
+                                    <Trash2 className="h-4 w-4" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))
+                        )}
                       </tbody>
                     </table>
                   </div>
@@ -754,7 +741,10 @@ const SellersDashboard = () => {
 
               {/* Product Filters */}
               <div className="flex flex-wrap gap-3 mb-6">
-                <button className="px-4 py-2 bg-indigo-100 text-indigo-700 rounded-lg font-medium">
+                <button
+                  onClick={() => getAllProducts()}
+                  className="px-4 py-2 bg-indigo-100 text-indigo-700 rounded-lg font-medium"
+                >
                   All Products
                 </button>
                 <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200">
