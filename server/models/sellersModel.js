@@ -89,7 +89,7 @@ const sellerSchema = new mongoose.Schema(
       index: true,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 sellerSchema.index({ verified: 1, shopName: 1 });

@@ -10,7 +10,7 @@ const toPositiveInt = (v, fallback) => {
 export const getAllProducts = async (req, res) => {
   try {
     const page = toPositiveInt(req.query.page, 1);
-    const limit = toPositiveInt(req.query.limit, 20);
+    const limit = toPositiveInt(req.query.limit, 50);
     const skip = (page - 1) * limit;
     const projection = {
       name: 1,

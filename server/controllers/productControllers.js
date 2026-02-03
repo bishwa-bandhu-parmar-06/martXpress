@@ -37,7 +37,8 @@ export const addProduct = async (req, res) => {
     const imageFiles = req.files || [];
     const imagePaths = imageFiles.map((file) => file.path);
 
-    const finalPrice = price - (price * discount) / 100;
+    const finalPrice = Number(price) - (Number(price) * Number(discount)) / 100;
+
 
     const newProduct = await productModel.create({
       sellerId,
@@ -78,20 +79,66 @@ export const addProduct = async (req, res) => {
 /**
  * 📦 Get all products by logged-in seller
  */
+// export const getAllProductsAddedByLoggedInSeller = async (req, res) => {
+//   try {
+//     const sellerId = req.user?.id;
+
+//     const products = await productModel
+//       .find({ sellerId })
+//       .lean()
+//       .sort({ createdAt: -1 });
+
+//     return res.status(200).json({
+//       status: 200,
+//       message: "All products fetched successfully.",
+//       count: products.length,
+//       products,
+//     });
+//   } catch (error) {
+//     console.error("Error fetching products:", error);
+//     return res.status(500).json({
+//       status: 500,
+//       message: "Internal server error.",
+//       error: error.message,
+//     });
+//   }
+// };
+
+
+
 export const getAllProductsAddedByLoggedInSeller = async (req, res) => {
   try {
     const sellerId = req.user?.id;
 
+    // 1️⃣ Read query params
+    const page = parseInt(req.query.page) || 1;      // current page
+    const limit = parseInt(req.query.limit) || 10;   // items per page
+    const skip = (page - 1) * limit;
+
+    // 2️⃣ Fetch total count
+    const totalProducts = await productModel.countDocuments({ sellerId });
+
+    // 3️⃣ Fetch paginated products
     const products = await productModel
       .find({ sellerId })
-      .lean()
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean();
 
+    // 4️⃣ Response
     return res.status(200).json({
       status: 200,
       message: "All products fetched successfully.",
-      count: products.length,
       products,
+      pagination: {
+        totalProducts,
+        page,
+        limit,
+        totalPages: Math.ceil(totalProducts / limit),
+        hasNextPage: page * limit < totalProducts,
+        hasPrevPage: page > 1,
+      },
     });
   } catch (error) {
     console.error("Error fetching products:", error);

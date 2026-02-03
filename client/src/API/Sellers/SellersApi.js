@@ -1,5 +1,7 @@
 import api from "../axiosInstance";
+import { getAuthToken } from "../../utils/auth.js";
 
+const token = getAuthToken("authToken");
 export const registerSeller = async (sellerData) => {
   try {
     if (sellerData instanceof FormData) {
@@ -18,7 +20,19 @@ export const registerSeller = async (sellerData) => {
   }
 };
 
+// TODO: Get Sellers Profile Details
+export const getSellersDetails = async () => {
+  try {
+    const response = await api.get("/sellers/seller-profile", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
 
-
-
-
+    // console.log("Response Sellers details:", response);
+    return response.data;
+  } catch (error) {
+    console.error("Get sellers error:", error);
+    throw error?.response?.data || new Error("Network Error");
+  }
+};
