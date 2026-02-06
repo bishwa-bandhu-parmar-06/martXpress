@@ -176,7 +176,7 @@ export const getFeaturedProducts = async (req, res) => {
       products,
     };
 
-    await setCache(cacheKey, responseData, 60); // short TTL
+    await setCache(cacheKey, responseData, 60);
     return res.status(200).json(responseData);
   } catch (error) {
     console.error("Error fetching featured products:", error);
@@ -346,19 +346,346 @@ export const searchProducts = async (req, res) => {
 };
 
 /**
- * NOTE: Cache Invalidation
- *
- * Whenever product is created/updated/deleted, call:
- *   deleteCache(`product:${productId}`)
- *   deleteCache(`seller:${sellerId}:*`) // or specific pages
- *   deleteCache('products:page:*')      // easiest: invalidate all pages on write
- *   deleteCache('products:featured:v1')
- *   deleteCache('products:categories:v1')
- *   deleteCache('products:brands:v1')
- *
- * Efficient invalidation strategy:
- * - On product write: delete product:<id> and all product list pages (or update them incrementally)
- * - On seller product write: delete seller:<sellerId>:page:* and affected list pages
- *
- * (Implement a small helper in product create/update/delete controllers that calls deleteCache for relevant keys)
+ * Get products grouped by category for Homepage
+ * Public Access
  */
+export const getGroupedProductsByCategory = async (req, res) => {
+  try {
+    const groupedProducts = await productModel.aggregate([
+      // 1. Sirf active products lo
+      { $match: { status: "active" } },
+
+      // 2. Latest products pehle aayein
+      { $sort: { createdAt: -1 } },
+
+      // 3. Category ke basis pe group karo
+      {
+        $group: {
+          _id: "$category",
+          products: { $push: "$$ROOT" },
+          count: { $sum: 1 },
+        },
+      },
+
+      // 4. Data format clean karo aur limit lagao
+      {
+        $project: {
+          categoryName: "$_id",
+          // Har category ke sirf top 10 products dikhao slider mein
+          products: { $slice: ["$products", 10] },
+          totalInCategory: "$count",
+          _id: 0,
+        },
+      },
+
+      // 5. Alfabetical order mein categories rakho (optional)
+      { $sort: { categoryName: 1 } },
+    ]);
+
+    return res.status(200).json({
+      status: 200,
+      success: true,
+      message: "Grouped products fetched successfully.",
+      data: groupedProducts,
+    });
+  } catch (error) {
+    console.error("Error in getGroupedProductsByCategory:", error);
+    return res.status(500).json({
+      status: 500,
+      message: "Internal server error.",
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * Get products for Hero Slider - Prioritizes featured, fills with top-rated
+ */
+export const getHeroSliderProducts = async (req, res) => {
+  try {
+    const sliderProducts = await productModel.aggregate([
+      // 1. Only active products
+      { $match: { status: "active" } },
+
+      // 2. Sort: featured first, then by rating, then by date
+      {
+        $sort: {
+          featured: -1, // Featured products first (true > false)
+          averageRating: -1, // Highest rating next
+          createdAt: -1, // Newest last
+        },
+      },
+
+      // 3. Group by category and take the best one
+      {
+        $group: {
+          _id: "$category",
+          product: { $first: "$$ROOT" },
+        },
+      },
+
+      // 4. Clean up the output format
+      {
+        $project: {
+          _id: 0,
+          categoryName: "$_id",
+          product: 1,
+        },
+      },
+
+      // 5. Sort categories alphabetically
+      { $sort: { categoryName: 1 } },
+
+      // 6. Limit to max 6 categories
+      { $limit: 6 },
+    ]);
+
+    res.status(200).json({
+      success: true,
+      data: sliderProducts,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+/**
+ *  Get products by specific category with pagination
+ */
+export const getProductsByCategory = async (req, res) => {
+  try {
+    const { categoryName } = req.params;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const skip = (page - 1) * limit;
+
+    // Decode URL-encoded category name
+    const decodedCategoryName = decodeURIComponent(categoryName);
+
+    console.log("Fetching products for category:", decodedCategoryName);
+
+    // First check if category exists by getting distinct categories
+    const categories = await productModel.distinct("category");
+    if (!categories.includes(decodedCategoryName)) {
+      return res.status(404).json({
+        status: 404,
+        success: false,
+        message: `Category "${decodedCategoryName}" not found.`,
+        availableCategories: categories,
+      });
+    }
+
+    // Get total count
+    const totalProducts = await productModel.countDocuments({
+      category: decodedCategoryName,
+      status: "active",
+    });
+
+    // Get products with pagination and populate seller info
+    const products = await productModel
+      .find({
+        category: decodedCategoryName,
+        status: "active",
+      })
+      .select({
+        _id: 1,
+        name: 1,
+        description: 1,
+        brand: 1,
+        category: 1,
+        price: 1,
+        discount: 1,
+        finalPrice: 1,
+        images: 1,
+        averageRating: 1,
+        totalRatings: 1,
+        stock: 1,
+        featured: 1,
+        tags: 1,
+        sellerId: 1,
+        status: 1,
+        createdAt: 1,
+      })
+      .populate({
+        path: "sellerId",
+        model: sellerModel,
+        select: "name shopName email",
+        options: { lean: true },
+      })
+      .lean()
+      .sort({ featured: -1, averageRating: -1, createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    return res.status(200).json({
+      status: 200,
+      success: true,
+      message: `Products for "${decodedCategoryName}" fetched successfully.`,
+      data: products,
+      total: totalProducts,
+      currentPage: page,
+      totalPages: Math.ceil(totalProducts / limit),
+      category: decodedCategoryName,
+    });
+  } catch (error) {
+    console.error("Error in getProductsByCategory:", error);
+    return res.status(500).json({
+      status: 500,
+      success: false,
+      message: "Internal server error.",
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * Get all unique categories
+ */
+export const getAllCategories = async (req, res) => {
+  try {
+    const categories = await productModel.distinct("category");
+
+    // Remove null/undefined categories and sort alphabetically
+    const cleanCategories = categories
+      .filter((cat) => cat && cat.trim() !== "")
+      .sort((a, b) => a.localeCompare(b));
+
+    return res.status(200).json({
+      status: 200,
+      success: true,
+      message: "Categories fetched successfully.",
+      data: cleanCategories,
+    });
+  } catch (error) {
+    console.error("Error in getAllCategories:", error);
+    return res.status(500).json({
+      status: 500,
+      success: false,
+      message: "Internal server error.",
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * Get top products for a category (for sliders)
+ */
+export const getTopCategoryProducts = async (req, res) => {
+  try {
+    const { categoryName } = req.params;
+    const limit = parseInt(req.query.limit) || 10;
+
+    const decodedCategoryName = decodeURIComponent(categoryName);
+
+    const topProducts = await productModel
+      .find({
+        category: decodedCategoryName,
+        status: "active",
+        featured: true,
+      })
+      .select({
+        _id: 1,
+        name: 1,
+        price: 1,
+        finalPrice: 1,
+        discount: 1,
+        images: 1,
+        averageRating: 1,
+        brand: 1,
+        featured: 1,
+      })
+      .lean()
+      .sort({ averageRating: -1, createdAt: -1 })
+      .limit(limit);
+
+    return res.status(200).json({
+      status: 200,
+      success: true,
+      message: `Top products for "${decodedCategoryName}" fetched successfully.`,
+      data: topProducts,
+      category: decodedCategoryName,
+    });
+  } catch (error) {
+    console.error("Error in getTopCategoryProducts:", error);
+    return res.status(500).json({
+      status: 500,
+      success: false,
+      message: "Internal server error.",
+      error: error.message,
+    });
+  }
+};
+
+/**
+ *  Get category-wise highest rated + featured products
+ * Fallback: only featured products of same category
+ */
+export const getCategoryTopFeaturedProducts = async (req, res) => {
+  try {
+    const { categoryName } = req.params;
+    const limit = Math.min(parseInt(req.query.limit) || 6);
+
+    if (!categoryName) {
+      return res.status(400).json({
+        success: false,
+        message: "Category name is required.",
+      });
+    }
+
+    const decodedCategory = decodeURIComponent(categoryName);
+
+    const baseFilter = {
+      status: "active",
+      category: decodedCategory,
+      featured: true,
+    };
+
+    // Highest rated + featured (same category)
+    const topRatedFeatured = await productModel
+      .find({
+        ...baseFilter,
+        averageRating: { $gt: 0 },
+      })
+      .select(
+        "_id name price finalPrice discount images averageRating brand featured",
+      )
+      .sort({ averageRating: -1, createdAt: -1 })
+      .limit(limit)
+      .lean();
+
+    if (topRatedFeatured.length > 0) {
+      return res.status(200).json({
+        success: true,
+        source: "top-rated-featured",
+        category: decodedCategory,
+        data: topRatedFeatured,
+      });
+    }
+
+    //Fallback → only featured (same category)
+    const featuredOnly = await productModel
+      .find(baseFilter)
+      .select(
+        "_id name price finalPrice discount images averageRating brand featured",
+      )
+      .sort({ createdAt: -1 })
+      .limit(6)
+      .lean();
+
+    return res.status(200).json({
+      success: true,
+      source: "featured-only",
+      category: decodedCategory,
+      data: featuredOnly,
+    });
+  } catch (error) {
+    console.error("getCategoryTopFeaturedProducts error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error.",
+    });
+  }
+};

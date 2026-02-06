@@ -45,9 +45,10 @@ import { getSellersDetails } from "../../API/Sellers/SellersApi.js";
 import AllOrders from "../../Components/SellersDashboard/Orders/AllOrders.jsx";
 import AllProducts from "../../Components/SellersDashboard/Products/AllProducts.jsx";
 import AnalyticsDashboard from "../../Components/SellersDashboard/AnalyticsDashboard.jsx";
-import SettingsPage from "@/Components/SellersDashboard/SettingsPage.jsx";
+import SettingsPage from "../../Components/SellersDashboard/SettingsPage.jsx";
 import { clearAuthData } from "../../utils/auth.js";
 import { useNavigate } from "react-router-dom";
+import EditProduct from "../../Components/SellersDashboard/Products/EditProduct.jsx";
 
 const SellersDashboard = () => {
   const navigate = useNavigate();
@@ -59,6 +60,9 @@ const SellersDashboard = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [products, setProducts] = useState([]);
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
+  const [isEditProductOpen, setIsEditProductOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+
   const [seller, setSeller] = useState(null);
   // Dark mode state
   const [darkMode, setDarkMode] = useState(() => {
@@ -98,6 +102,8 @@ const SellersDashboard = () => {
     clearAuthData();
     navigate("/");
   };
+
+  
 
   // State for orders
   const [orders] = useState([
@@ -641,6 +647,14 @@ const SellersDashboard = () => {
       <AddProduct
         isOpen={isAddProductOpen}
         onClose={() => setIsAddProductOpen(false)}
+      />
+      <EditProduct
+        isOpen={isEditProductOpen}
+        product={selectedProduct}
+        onClose={() => {
+          setIsEditProductOpen(false);
+          setSelectedProduct(null);
+        }}
       />
     </div>
   );

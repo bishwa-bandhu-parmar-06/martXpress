@@ -1,7 +1,11 @@
-export const errorMiddleware = (error, req, res, next) => {
-  const status = error.status || 500;
-  const message = error.message || "BACKEND ERROR FROM ERROR MIDDLEWARE";
-  const extraDetails = error.extraDetails || "error from backend";
+export const errorMiddleware = (err, req, res, next) => {
+  const statusCode = err.statusCode || 500;
 
-  return res.status(status).json({ message: message, extraDetails });
+  res.status(statusCode).json({
+    success: false,
+    message:
+      process.env.NODE_ENV === "production"
+        ? "Internal server error"
+        : err.message,
+  });
 };

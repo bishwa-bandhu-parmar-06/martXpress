@@ -29,4 +29,6 @@ router.post("/update/:productId", upload.array("images", 5), updateProduct);
 // Delete product
 router.post("/delete/:productId", deleteProduct);
 
+
+
 export default router;

@@ -27,6 +27,7 @@ import AdminDashBoard from "./Pages/Admin/AdminDashBoard";
 import AdminAuth from "./Pages/Admin/AdminAuth";
 import ProtectedRoute from "./Components/Common/ProtectedRoute";
 
+import ScrollToTop from "./Components/Common/ScrollToTop";
 const App = () => {
   const isLoading = useInitialLoader();
 
@@ -37,6 +38,7 @@ const App = () => {
   return (
     <>
       <Router>
+        <ScrollToTop />
         <Theme />
         <ToastContainer />
         <TopNavbar />

@@ -1,54 +1,45 @@
-import React from "react";
-import { useNavigate } from 'react-router-dom';
-
-
+import { getAllBrands } from "@/API/Common/brandsApi";
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { toBrandSlug } from "../../utils/brandSlug";
 const TopBrands = () => {
-    const navigate = useNavigate();
-  // Premium brand names only
-  const brands = [
-    "APPLE",
-    "SAMSUNG",
-    "NIKE",
-    "ADIDAS",
-    "SONY",
-    "MICROSOFT",
-    "GOOGLE",
-    "AMAZON",
-    "TESLA",
-    "COCA-COLA",
-    "PEPSI",
-    "DELL",
-    "HP",
-    "LG",
-    "NESTLÉ",
-    "INTEL",
-    "TOYOTA",
-    "MCDONALD'S",
-    "STARBUCKS",
-    "DISNEY",
-  ];
+  const navigate = useNavigate();
 
-  // Duplicate brands for seamless infinite scroll
+  const [brands, setBrands] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchBrands = async () => {
+      try {
+        const res = await getAllBrands();
+        console.log("Response : ", res);
+        if (res.status === 200) {
+          setBrands(res.brands);
+        }
+      } catch (err) {
+        console.error("Failed to load brands", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBrands();
+  }, []);
+// YAHI ADD KARNA THA
   const duplicatedBrands = [...brands, ...brands, ...brands];
-
 
   // Function to handle View All button click
   const handleViewAllClick = () => {
-    navigate('/brands'); // Navigate to brands page
-    // OR use a dynamic route if you have category:
-    // navigate(`/category/brands`);
+    navigate("/brands");
   };
 
-  // Function to handle individual brand click
-  const handleBrandClick = (brandName) => {
-    // Navigate to specific brand page or filter by brand
-    const brandSlug = brandName.toLowerCase().replace(/[^a-z0-9]/g, '-');
-    navigate(`/brand/${brandSlug}`);
-    // OR if you want to filter products by brand:
-    // navigate(`/products?brand=${brandSlug}`);
+  const handleBrandClick = (brand) => {
+    const brandSlug = toBrandSlug(brand);
+
+    navigate(`/brand/${brandSlug}`, {
+      state: { brand },
+    });
   };
-
-
 
   return (
     <div
@@ -84,7 +75,7 @@ const TopBrands = () => {
             </span>
           </div>
           <button
-          onClick={handleViewAllClick} 
+            onClick={handleViewAllClick}
             className="px-5 py-2.5 cursor-pointer bg-linear-to-r from-primary to-primary/90 
             hover:from-primary/90 hover:to-primary text-white text-sm font-semibold 
             rounded-lg transition-all duration-300 hover:scale-105 active:scale-95 
@@ -96,9 +87,9 @@ const TopBrands = () => {
       </div>
 
       {/* Brands Marquee Container - Fixed Height */}
-      <div className="relative h-[120px] overflow-hidden">
+      <div className="relative h-30 overflow-hidden">
         {/* Top Row - Moving Right */}
-        <div className="absolute top-0 left-0 right-0 h-[50px] overflow-hidden">
+        <div className="absolute top-0 left-0 right-0 h-12.5 overflow-hidden">
           <div className="flex animate-marquee-right whitespace-nowrap py-3">
             {duplicatedBrands.map((brand, index) => (
               <div
@@ -149,7 +140,7 @@ const TopBrands = () => {
         </div>
 
         {/* Bottom Row - Moving Left */}
-        <div className="absolute bottom-0 left-0 right-0 h-[50px] overflow-hidden">
+        <div className="absolute bottom-0 left-0 right-0 h-12.5 overflow-hidden">
           <div className="flex animate-marquee-left whitespace-nowrap py-3">
             {duplicatedBrands.map((brand, index) => (
               <div
@@ -183,19 +174,19 @@ const TopBrands = () => {
 
         {/* Gradient edge fades */}
         <div
-          className="absolute top-0 left-0 w-20 h-[50px] bg-linear-to-r 
+          className="absolute top-0 left-0 w-20 h-12.5 bg-linear-to-r 
           from-gray-50 dark:from-gray-900 to-transparent z-10"
         ></div>
         <div
-          className="absolute top-0 right-0 w-20 h-[50px] bg-linear-to-l 
+          className="absolute top-0 right-0 w-20 h-12.5 bg-linear-to-l 
           from-gray-50 dark:from-gray-900 to-transparent z-10"
         ></div>
         <div
-          className="absolute bottom-0 left-0 w-20 h-[50px] bg-linear-to-r 
+          className="absolute bottom-0 left-0 w-20 h-12.5 bg-linear-to-r 
           from-gray-50 dark:from-gray-900 to-transparent z-10"
         ></div>
         <div
-          className="absolute bottom-0 right-0 w-20 h-[50px] bg-linear-to-l 
+          className="absolute bottom-0 right-0 w-20 h-12.5 bg-linear-to-l 
           from-gray-50 dark:from-gray-900 to-transparent z-10"
         ></div>
 

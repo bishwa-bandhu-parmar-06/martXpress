@@ -24,8 +24,10 @@ import {
   ChevronRight,
 } from "lucide-react";
 import AddProduct from "./AddProduct.jsx";
-
+import EditProduct from "./EditProduct.jsx";
+import { useNavigate } from "react-router-dom";
 const AllProducts = () => {
+  const navigate = useNavigate();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -41,7 +43,17 @@ const AllProducts = () => {
   const [productToDelete, setProductToDelete] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
-  
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  // Add state for edit modal
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [productToEdit, setProductToEdit] = useState(null);
+
+  // Edit button handler
+  const handleEditClick = (product) => {
+    setProductToEdit(product);
+    setEditModalOpen(true);
+  };
+
   // Add these new states for server-side pagination
   const [totalProducts, setTotalProducts] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -65,7 +77,7 @@ const AllProducts = () => {
         ? response.products
         : [];
       setProducts(productsData);
-      
+
       // Set server-side pagination data
       if (response.pagination) {
         setTotalProducts(response.pagination.totalProducts);
@@ -92,6 +104,25 @@ const AllProducts = () => {
     getAllProducts(currentPage, itemsPerPage);
   }, [currentPage, itemsPerPage]);
 
+  const handleProductClick = (product) => {
+    if (product) {
+      navigate(`/product/${product._id}`, {
+        state: {
+          productData: {
+            ...product,
+            // AllProducts mein category variables nahi hain,
+            // isliye hum product object se hi data nikalenge
+            category: product.category,
+            // Agar icon ya color constants hain toh wahan se le sakte hain
+            // ya simple default bhej sakte hain
+            categoryIcon: "📦",
+            categoryColor: "from-indigo-500 to-blue-500",
+          },
+        },
+      });
+    }
+  };
+
   // Client-side filtering and sorting (only for the current page)
   const filteredProducts = useMemo(() => {
     let result = [...products];
@@ -101,7 +132,9 @@ const AllProducts = () => {
       result = result.filter(
         (product) =>
           product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          product.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          product.description
+            ?.toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
           product.brand?.toLowerCase().includes(searchTerm.toLowerCase()) ||
           product.tags?.some((tag) =>
             tag.toLowerCase().includes(searchTerm.toLowerCase()),
@@ -124,10 +157,14 @@ const AllProducts = () => {
     // Apply sorting
     switch (sortBy) {
       case "newest":
-        result.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+        result.sort(
+          (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0),
+        );
         break;
       case "oldest":
-        result.sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
+        result.sort(
+          (a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0),
+        );
         break;
       case "price-high":
         result.sort((a, b) => (b.finalPrice || 0) - (a.finalPrice || 0));
@@ -157,7 +194,7 @@ const AllProducts = () => {
   // When filters change, we need to fetch from server with new filters
   // For now, we'll do client-side filtering on the current page
   // For production, you might want to modify your API to accept filters
-  
+
   // Calculate statistics
   const calculateStats = (productsData) => {
     const totalProducts = productsData.length;
@@ -212,10 +249,10 @@ const AllProducts = () => {
 
   // Handle bulk selection
   const toggleProductSelection = (productId) => {
-    setSelectedProducts(prev =>
+    setSelectedProducts((prev) =>
       prev.includes(productId)
         ? prev.filter((id) => id !== productId)
-        : [...prev, productId]
+        : [...prev, productId],
     );
   };
 
@@ -229,12 +266,13 @@ const AllProducts = () => {
 
   // Handle bulk delete
   const handleBulkDelete = async () => {
-    if (!window.confirm(`Delete ${selectedProducts.length} product(s)?`)) return;
-    
+    if (!window.confirm(`Delete ${selectedProducts.length} product(s)?`))
+      return;
+
     setDeleteLoading(true);
     try {
       await Promise.all(
-        selectedProducts.map((id) => deleteProductsForLoggedInSeller(id))
+        selectedProducts.map((id) => deleteProductsForLoggedInSeller(id)),
       );
       await getAllProducts(currentPage, itemsPerPage);
       setSelectedProducts([]);
@@ -386,22 +424,25 @@ const AllProducts = () => {
                       stat.color === "green"
                         ? "text-green-600 dark:text-green-400"
                         : stat.color === "red"
-                        ? "text-red-600 dark:text-red-400"
-                        : "text-gray-900 dark:text-white"
+                          ? "text-red-600 dark:text-red-400"
+                          : "text-gray-900 dark:text-white"
                     }`}
                   >
                     {stat.value}
                   </p>
                 </div>
-                <div className={`p-2 bg-${stat.color}-100 dark:bg-${stat.color}-900/30 rounded-lg`}>
-                  <stat.icon className={`h-5 w-5 md:h-6 md:w-6 text-${stat.color}-600 dark:text-${stat.color}-400`} />
+                <div
+                  className={`p-2 bg-${stat.color}-100 dark:bg-${stat.color}-900/30 rounded-lg`}
+                >
+                  <stat.icon
+                    className={`h-5 w-5 md:h-6 md:w-6 text-${stat.color}-600 dark:text-${stat.color}-400`}
+                  />
                 </div>
               </div>
             </div>
           ))}
         </div>
       </div>
-
       {/* Filters and Controls */}
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 mb-6">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -470,22 +511,26 @@ const AllProducts = () => {
         {/* Items per page and Sort By */}
         <div className="flex flex-wrap items-center justify-between gap-3 mt-4">
           <div className="flex items-center gap-3">
-            <span className="text-sm text-gray-600 dark:text-gray-400">Show:</span>
+            <span className="text-sm text-gray-600 dark:text-gray-400">
+              Show:
+            </span>
             <select
               value={itemsPerPage}
               onChange={(e) => {
                 const newLimit = Number(e.target.value);
                 setItemsPerPage(newLimit);
-                setCurrentPage(1); // Reset to first page when changing limit
+                setCurrentPage(1);
               }}
               className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
             >
-              <option value={5}>5</option>
-              <option value={10}>10</option>
-              <option value={20}>20</option>
-              <option value={50}>50</option>
+              <option value={4}>4</option>
+              <option value={12}>12</option>
+              <option value={16}>16</option>
+              <option value={48}>48</option>
             </select>
-            <span className="text-sm text-gray-600 dark:text-gray-400">per page</span>
+            <span className="text-sm text-gray-600 dark:text-gray-400">
+              per page
+            </span>
           </div>
 
           <select
@@ -503,49 +548,7 @@ const AllProducts = () => {
             <option value="name-desc">Name: Z to A</option>
           </select>
         </div>
-
-        {/* Selected products actions */}
-        {selectedProducts.length > 0 && (
-          <div className="mt-4 p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border border-indigo-200 dark:border-indigo-800/30">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <input
-                  type="checkbox"
-                  checked={selectedProducts.length === filteredProducts.length}
-                  onChange={selectAllProducts}
-                  className="h-4 w-4 text-indigo-600 rounded"
-                />
-                <span className="text-sm font-medium text-indigo-700 dark:text-indigo-300">
-                  {selectedProducts.length} product(s) selected
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => alert("Bulk edit feature coming soon!")}
-                  className="px-3 py-1.5 text-sm bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-lg hover:bg-indigo-200 dark:hover:bg-indigo-900/50"
-                >
-                  Bulk Edit
-                </button>
-                <button
-                  onClick={handleBulkDelete}
-                  disabled={deleteLoading}
-                  className="px-3 py-1.5 text-sm bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 disabled:opacity-50 flex items-center gap-1"
-                >
-                  {deleteLoading ? (
-                    <>
-                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-red-700"></div>
-                      Deleting...
-                    </>
-                  ) : (
-                    "Bulk Delete"
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
-
       {/* Error Message */}
       {error && (
         <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/30 rounded-lg">
@@ -555,7 +558,6 @@ const AllProducts = () => {
           </div>
         </div>
       )}
-
       {/* Products Grid/List View */}
       {viewMode === "grid" ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
@@ -577,14 +579,7 @@ const AllProducts = () => {
                     <ImageIcon className="h-10 w-10 text-gray-400 dark:text-gray-500" />
                   </div>
                 )}
-                <div className="absolute top-2 left-2">
-                  <input
-                    type="checkbox"
-                    checked={selectedProducts.includes(product._id)}
-                    onChange={() => toggleProductSelection(product._id)}
-                    className="h-4 w-4 text-indigo-600 rounded cursor-pointer"
-                  />
-                </div>
+
                 <div className="absolute top-2 right-2 flex flex-col gap-1">
                   <FeaturedBadge featured={product.featured} />
                   <StatusBadge status={product.status} />
@@ -639,18 +634,26 @@ const AllProducts = () => {
                       )}
                     </div>
                     <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                      Stock: <span className="font-medium">{product.stock || 0}</span> units
+                      Stock:{" "}
+                      <span className="font-medium">{product.stock || 0}</span>{" "}
+                      units
                     </p>
                   </div>
                 </div>
 
                 {/* Action Buttons */}
                 <div className="flex items-center gap-2">
-                  <button className="cursor-pointer flex-1 px-2 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center justify-center gap-1 text-xs">
+                  <button
+                    onClick={() => handleProductClick(product)}
+                    className="cursor-pointer flex-1 px-2 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center justify-center gap-1 text-xs"
+                  >
                     <Eye className="h-3 w-3" />
                     View
                   </button>
-                  <button className="cursor-pointer flex-1 px-2 py-1.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-lg hover:bg-indigo-200 dark:hover:bg-indigo-900/50 transition-colors flex items-center justify-center gap-1 text-xs">
+                  <button
+                    onClick={() => handleEditClick(product)}
+                    className="cursor-pointer flex-1 px-2 py-1.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-lg hover:bg-indigo-200 dark:hover:bg-indigo-900/50 transition-colors flex items-center justify-center gap-1 text-xs"
+                  >
                     <Edit className="h-3 w-3" />
                     Edit
                   </button>
@@ -673,7 +676,7 @@ const AllProducts = () => {
         /* List View */
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[800px]">
+            <table className="w-full min-w-200">
               <thead className="bg-gray-50 dark:bg-gray-700">
                 <tr>
                   <th className="px-4 py-3 text-left">
@@ -768,11 +771,13 @@ const AllProducts = () => {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <span className={`text-sm font-medium ${(product.stock || 0) < 10 ? "text-yellow-600 dark:text-yellow-400" : "text-gray-900 dark:text-white"}`}>
+                        <span
+                          className={`text-sm font-medium ${(product.stock || 0) < 10 ? "text-yellow-600 dark:text-yellow-400" : "text-gray-900 dark:text-white"}`}
+                        >
                           {product.stock || 0}
                         </span>
                         {(product.stock || 0) < 10 && (
-                          <AlertCircle className="h-4 w-4 text-yellow-500 flex-shrink-0" />
+                          <AlertCircle className="h-4 w-4 text-yellow-500 shrink-0" />
                         )}
                       </div>
                     </td>
@@ -805,19 +810,17 @@ const AllProducts = () => {
           </div>
         </div>
       )}
-
       {/* Pagination - Now using server-side pagination */}
       {totalProducts > 0 && (
         <div className="mt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="text-sm text-gray-700 dark:text-gray-300">
             Showing <span className="font-medium">{startIndex}</span> to{" "}
-            <span className="font-medium">{endIndex}</span>{" "}
-            of <span className="font-medium">{totalProducts}</span>{" "}
-            products
+            <span className="font-medium">{endIndex}</span> of{" "}
+            <span className="font-medium">{totalProducts}</span> products
           </div>
           <div className="flex items-center gap-1">
             <button
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
               disabled={!hasPrevPage}
               className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -866,7 +869,9 @@ const AllProducts = () => {
             )}
 
             <button
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              onClick={() =>
+                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+              }
               disabled={!hasNextPage}
               className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -875,7 +880,6 @@ const AllProducts = () => {
           </div>
         </div>
       )}
-
       {/* No Products Message */}
       {filteredProducts.length === 0 && !loading && (
         <div className="text-center py-12">
@@ -899,7 +903,6 @@ const AllProducts = () => {
           </button>
         </div>
       )}
-
       {/* Delete Confirmation Modal */}
       {showDeleteModal && productToDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
@@ -951,8 +954,16 @@ const AllProducts = () => {
           </div>
         </div>
       )}
-
       <AddProduct isOpen={isOpen} onClose={() => setIsOpen(false)} />
+
+      <EditProduct
+        isOpen={editModalOpen}
+        onClose={() => {
+          setEditModalOpen(false);
+          setProductToEdit(null);
+        }}
+        productData={productToEdit}
+      />
     </div>
   );
 };
