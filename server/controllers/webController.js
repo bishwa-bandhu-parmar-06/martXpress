@@ -9,6 +9,7 @@ const toPositiveInt = (v, fallback) => {
 
 export const getAllProducts = async (req, res) => {
   try {
+    console.log("MongoDB Query Executed");
     const page = toPositiveInt(req.query.page, 1);
     const limit = toPositiveInt(req.query.limit, 50);
     const skip = (page - 1) * limit;
@@ -350,7 +351,9 @@ export const searchProducts = async (req, res) => {
  * Public Access
  */
 export const getGroupedProductsByCategory = async (req, res) => {
+  console.log("Tigger !");
   try {
+    console.log("Tigger 12122");
     const groupedProducts = await productModel.aggregate([
       // 1. Sirf active products lo
       { $match: { status: "active" } },

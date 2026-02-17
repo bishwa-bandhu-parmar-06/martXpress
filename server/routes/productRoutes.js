@@ -1,4 +1,7 @@
 import express from "express";
+import rateLimit from "express-rate-limit";
+import RedisStore from "rate-limit-redis";
+
 import {
   addProduct,
   getAllProductsAddedByLoggedInSeller,
@@ -6,29 +9,90 @@ import {
   deleteProduct,
   getSingleProduct,
 } from "../controllers/productControllers.js";
+
 import { upload } from "../uploads/multer.js";
 import { verifyToken } from "../middleware/authMiddleware.js";
+import redisClient from "../config/redisClient.js";
 
 const router = express.Router();
 
-// All routes below are protected — only for logged-in sellers
+/* -------------------- RATE LIMITERS -------------------- */
+
+const addProductLimiter = rateLimit({
+  store: new RedisStore({
+    sendCommand: (...args) => redisClient.sendCommand(args),
+  }),
+  windowMs: 10 * 60 * 1000, // 10 min
+  max: 5,
+  keyGenerator: (req) => req.user.id,
+  message: {
+    status: 429,
+    message: "Too many product uploads. Try again later.",
+  },
+});
+
+const updateProductLimiter = rateLimit({
+  store: new RedisStore({
+    sendCommand: (...args) => redisClient.sendCommand(args),
+  }),
+  windowMs: 10 * 60 * 1000,
+  max: 10,
+  keyGenerator: (req) => req.user.id,
+  message: {
+    status: 429,
+    message: "Too many update requests.",
+  },
+});
+
+const deleteProductLimiter = rateLimit({
+  store: new RedisStore({
+    sendCommand: (...args) => redisClient.sendCommand(args),
+  }),
+  windowMs: 10 * 60 * 1000,
+  max: 5,
+  keyGenerator: (req) => req.user.id,
+  message: {
+    status: 429,
+    message: "Too many delete attempts.",
+  },
+});
+
+const readProductLimiter = rateLimit({
+  store: new RedisStore({
+    sendCommand: (...args) => redisClient.sendCommand(args),
+  }),
+  windowMs: 1 * 60 * 1000, // 1 min
+  max: 30,
+  keyGenerator: (req) => req.user.id,
+});
+
+/* -------------------- ROUTES -------------------- */
+
+//  All routes protected
 router.use(verifyToken);
 
 // Add product
 router.post("/add", upload.array("images", 5), addProduct);
 
-// Get all products of logged-in seller
-router.get("/my-products", getAllProductsAddedByLoggedInSeller);
+// Seller products
+router.get(
+  "/my-products",
+  // readProductLimiter,
+  getAllProductsAddedByLoggedInSeller,
+);
 
-// Get single product
+// Single product
 router.get("/:productId", getSingleProduct);
 
 // Update product
-router.post("/update/:productId", upload.array("images", 5), updateProduct);
+router.post(
+  "/update/:productId",
+  // updateProductLimiter,
+  upload.array("images", 5),
+  updateProduct,
+);
 
 // Delete product
 router.post("/delete/:productId", deleteProduct);
-
-
 
 export default router;

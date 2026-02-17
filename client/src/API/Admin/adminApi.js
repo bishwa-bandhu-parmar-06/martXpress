@@ -2,8 +2,6 @@ import api from "../axiosInstance";
 import { getAuthToken } from "../../utils/auth";
 const token = getAuthToken("authToken");
 
-
-
 export const registerAdmin = async (payload) => {
   const res = await api.post("/auth/register-admin", payload);
   return res.data;
@@ -81,11 +79,15 @@ export const getSellersAccountBySellersId = async (payload) => {
 };
 
 export const deleteSellersAccountBySellersId = async (sellerid) => {
-  const res = await api.post(`/admin/sellers/${sellerid}/remove`, {},{
-    headers: {
-      Authorization: `Bearer ${token}`,
+  const res = await api.post(
+    `/admin/sellers/${sellerid}/remove`,
+    {},
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     },
-  });
+  );
   return res.data;
 };
 

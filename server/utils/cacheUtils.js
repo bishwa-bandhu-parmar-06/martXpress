@@ -1,18 +1,29 @@
-// // cacheUtils.js
-// import {redisClient} from "../config/redisClient.js";
+// utils/cacheUtils.js
+import redisClient from "../config/redisClient.js";
 
-// // ✅ Cache se data laane ka function
-// export const getCache = async (key) => {
-//   const data = await redisClient.get(key);
-//   return data ? JSON.parse(data) : null;
-// };
+export const getCache = async (key) => {
+  try {
+    const data = await redisClient.get(key);
+    return data ? JSON.parse(data) : null;
+  } catch (err) {
+    console.error("Redis Get Error:", err);
+    return null;
+  }
+};
 
-// // ✅ Cache me data save karne ka function
-// export const setCache = async (key, value, ttl = 60) => {
-//   await redisClient.setEx(key, ttl, JSON.stringify(value)); // ttl = seconds
-// };
+export const setCache = async (key, value, ttl = 3600) => {
+  try {
+    // ttl is in seconds, default 1 hour
+    await redisClient.set(key, JSON.stringify(value), { EX: ttl });
+  } catch (err) {
+    console.error("Redis Set Error:", err);
+  }
+};
 
-// // ✅ Cache delete karne ka function (jab data update/delete ho)
-// export const deleteCache = async (key) => {
-//   await redisClient.del(key);
-// };
+export const deleteCache = async (key) => {
+  try {
+    await redisClient.del(key);
+  } catch (err) {
+    console.error("Redis Delete Error:", err);
+  }
+};

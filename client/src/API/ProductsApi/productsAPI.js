@@ -119,7 +119,7 @@ export const editProductDetails = async (formData) => {
 export const getHomepageGroupedProducts = async () => {
   try {
     const response = await api.get("/homepage-grouped");
-    // console.log("Grouped Data : ", response);
+    console.log("Grouped Data : ", response);
     return response.data;
   } catch (error) {
     throw error.response ? error.response.data : new Error("Network Error");
