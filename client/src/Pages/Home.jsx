@@ -15,7 +15,7 @@ const Home = () => {
       try {
         setLoading(true);
         const response = await getHomepageGroupedProducts();
-        console.log("Response from Hiome : ", response);
+        // console.log("Response from Hiome : ", response);
         // Backend JSON structure: response.data.data (array of category groups)
         if (response.success) {
           setGroupedData(response.data);

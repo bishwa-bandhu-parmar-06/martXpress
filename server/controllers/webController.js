@@ -351,9 +351,9 @@ export const searchProducts = async (req, res) => {
  * Public Access
  */
 export const getGroupedProductsByCategory = async (req, res) => {
-  console.log("Tigger !");
+  // console.log("Tigger !");
   try {
-    console.log("Tigger 12122");
+    // console.log("Tigger 12122");
     const groupedProducts = await productModel.aggregate([
       // 1. Sirf active products lo
       { $match: { status: "active" } },
