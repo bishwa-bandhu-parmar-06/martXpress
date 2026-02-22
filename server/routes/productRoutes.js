@@ -13,6 +13,7 @@ import {
 import { upload } from "../uploads/multer.js";
 import { verifyToken } from "../middleware/authMiddleware.js";
 import redisClient from "../config/redisClient.js";
+import { cacheMiddleware } from "../middleware/redisMiddleware.js";
 
 const router = express.Router();
 
@@ -72,22 +73,24 @@ const readProductLimiter = rateLimit({
 router.use(verifyToken);
 
 // Add product
-router.post("/add", upload.array("images", 5), addProduct);
+router.post("/add", cacheMiddleware(600), upload.array("images", 5), addProduct);
 
 // Seller products
 router.get(
   "/my-products",
   // readProductLimiter,
+  cacheMiddleware(600), 
   getAllProductsAddedByLoggedInSeller,
 );
 
 // Single product
-router.get("/:productId", getSingleProduct);
+router.get("/:productId", cacheMiddleware(600), getSingleProduct);
 
 // Update product
 router.post(
   "/update/:productId",
   // updateProductLimiter,
+  cacheMiddleware(600),
   upload.array("images", 5),
   updateProduct,
 );

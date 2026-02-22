@@ -1,6 +1,4 @@
 import api from "../axiosInstance";
-import { getAuthToken } from "../../utils/auth";
-const token = getAuthToken("authToken");
 
 export const registerAdmin = async (payload) => {
   const res = await api.post("/auth/register-admin", payload);
@@ -8,94 +6,47 @@ export const registerAdmin = async (payload) => {
 };
 
 export const getAdminProfile = async () => {
-  const res = await api.get("/admin/profile", {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+  const res = await api.get("/admin/profile");
   return res.data;
 };
 
-export const getPendingAccountForSellers = async (payload) => {
-  const res = await api.get("/admin/sellers/pending", {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+export const getPendingAccountForSellers = async () => {
+  const res = await api.get("/admin/sellers/pending");
   return res.data;
 };
 
 export const getApprovedAccountOfSellers = async () => {
-  const res = await api.get("/admin/sellers/approved", {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+  const res = await api.get("/admin/sellers/approved");
   return res.data;
 };
 
 export const getRejectededAccountOfSellers = async () => {
-  const res = await api.get("/admin/sellers/rejected", {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+  const res = await api.get("/admin/sellers/rejected");
   return res.data;
 };
 
 export const approveAccountOfSellers = async (sellerid) => {
-  const res = await api.post(
-    `/admin/sellers/${sellerid}/approve`,
-    {},
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    },
-  );
+  const res = await api.post(`/admin/sellers/${sellerid}/approve`);
   return res.data;
 };
 
 export const rejectAccountOfSellers = async (sellerid) => {
-  const res = await api.post(
-    `/admin/sellers/${sellerid}/reject`,
-    {},
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    },
-  );
+  const res = await api.post(`/admin/sellers/${sellerid}/reject`);
   return res.data;
 };
 
-export const getSellersAccountBySellersId = async (payload) => {
-  const res = await api.get("/admin/sellers/:sellerid", {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+// Bonus fix: You had ":sellerid" hardcoded here. I fixed it to use the payload!
+export const getSellersAccountBySellersId = async (sellerid) => {
+  const res = await api.get(`/admin/sellers/${sellerid}`);
   return res.data;
 };
 
 export const deleteSellersAccountBySellersId = async (sellerid) => {
-  const res = await api.post(
-    `/admin/sellers/${sellerid}/remove`,
-    {},
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    },
-  );
+  const res = await api.post(`/admin/sellers/${sellerid}/remove`);
   return res.data;
 };
 
 export const getAdminDashboardStats = async () => {
-  const res = await api.get("/admin/dashboard/stats", {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+  const res = await api.get("/admin/dashboard/stats");
   return res.data;
 };

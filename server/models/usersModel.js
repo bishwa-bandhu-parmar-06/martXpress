@@ -1,12 +1,14 @@
 import mongoose from "mongoose";
 import validator from "validator";
+import { required } from "zod/mini";
+import bcrypt from "bcryptjs";
 
 const userSchema = new mongoose.Schema(
   {
     name: {
       type: String,
       trim: true,
-      default: "", // Empty by default, user can update later
+      default: "",
     },
     email: {
       type: String,
@@ -15,12 +17,16 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
       validate: [validator.isEmail, "Please enter a valid email address"],
     },
+    password: {
+      type: String,
+      select: false,
+      required: [true, "Please enter your email"],
+    },
     mobile: {
       type: String,
-      default: "", // Empty by default, user can add later
+      default: "",
       validate: {
         validator: function (v) {
-          // Only validate if mobile is provided
           if (!v) return true;
           return /^[6-9]\d{9}$/.test(v);
         },
@@ -33,18 +39,16 @@ const userSchema = new mongoose.Schema(
       default: "user",
     },
 
-    // Email verification
     isEmailVerified: {
       type: Boolean,
       default: false,
     },
 
-    // Profile completion status
     isProfileComplete: {
       type: Boolean,
       default: false,
     },
-    // Summary fields (can be populated later)
+
     totalOrders: {
       type: Number,
       default: 0,
@@ -58,7 +62,6 @@ const userSchema = new mongoose.Schema(
       default: 0,
     },
 
-    // Addresses (can be added later)
     addresses: [
       {
         type: mongoose.Schema.Types.ObjectId,
@@ -66,8 +69,13 @@ const userSchema = new mongoose.Schema(
       },
     ],
   },
-  { timestamps: true }
+  { timestamps: true },
 );
+userSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
 
+  this.password = await bcrypt.hash(this.password, 10);
+  next();
+});
 const User = mongoose.model("user", userSchema);
 export default User;

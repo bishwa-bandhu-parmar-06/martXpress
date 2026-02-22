@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import validator from "validator";
-
+import bcrypt from "bcryptjs";
 const sellerSchema = new mongoose.Schema(
   {
     name: {
@@ -10,7 +10,11 @@ const sellerSchema = new mongoose.Schema(
       minlength: 3,
       maxlength: 60,
     },
-
+    password: {
+      type: String,
+      select: false,
+      required: [true, "Please enter password"],
+    },
     email: {
       type: String,
       required: true,
@@ -97,9 +101,15 @@ sellerSchema.index({ createdAt: -1 });
 sellerSchema.set("toJSON", {
   transform: function (doc, ret) {
     delete ret.__v;
-    delete ret.password; // extra safety
+    delete ret.password;
     return ret;
   },
+});
+sellerSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
+
+  this.password = await bcrypt.hash(this.password, 10);
+  next();
 });
 
 const Seller = mongoose.model("Seller", sellerSchema);

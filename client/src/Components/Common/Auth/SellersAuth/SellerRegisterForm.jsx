@@ -1,67 +1,93 @@
-import React, { useState } from "react";
-import { registerSeller } from "../../../../API/Sellers/SellersApi.js";
+import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { registerSeller } from "../../../../API/Sellers/SellersApi.js";
+import {
+  Eye,
+  EyeOff,
+  User,
+  Mail,
+  Store,
+  FileText,
+  Hash,
+  X,
+  Lock,
+} from "lucide-react";
 
-const SellerRegisterForm = () => {
+const SellerRegisterForm = ({ onSwitchToLogin }) => {
   const navigate = useNavigate();
+  const fileInputRef = useRef(null);
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     mobile: "",
     shopName: "",
     gstNumber: "",
+    password: "",
     TermsAndCdn: false,
   });
-
+  const [showPass, setShowPass] = useState(false);
   const [gstCertificate, setGstCertificate] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData({
-      ...formData,
+    setFormData((prev) => ({
+      ...prev,
       [name]: type === "checkbox" ? checked : value,
-    });
+    }));
   };
 
   const handleFileChange = (e) => {
-    setGstCertificate(e.target.files[0]);
+    const file = e.target.files && e.target.files[0];
+    if (file) {
+      // 1. Validate File Type
+      const validTypes = [
+        "application/pdf",
+        "image/jpeg",
+        "image/jpg",
+        "image/png",
+      ];
+      if (!validTypes.includes(file.type)) {
+        setError("Only PDF, JPG, JPEG, and PNG files are allowed.");
+        return handleRemoveFile();
+      }
+
+      // 2. Validate File Size (5MB = 5 * 1024 * 1024 bytes)
+      if (file.size > 5 * 1024 * 1024) {
+        setError("File size must be less than 5MB.");
+        return handleRemoveFile();
+      }
+
+      // 3. Clear errors and set file
+      setError("");
+      setGstCertificate(file);
+    }
+  };
+
+  const handleRemoveFile = () => {
+    setGstCertificate(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setError("");
-    setSuccess("");
 
+    setLoading(true);
     try {
       const payload = new FormData();
+      Object.keys(formData).forEach((key) =>
+        payload.append(key, formData[key]),
+      );
+      if (gstCertificate) payload.append("gstCertificate", gstCertificate);
 
-      payload.append("name", formData.name);
-      payload.append("email", formData.email);
-      payload.append("mobile", formData.mobile);
-      payload.append("shopName", formData.shopName);
-      payload.append("gstNumber", formData.gstNumber);
-      payload.append("TermsAndCdn", formData.TermsAndCdn);
-
-      if (gstCertificate) {
-        payload.append("gstCertificate", gstCertificate);
+      const response = await registerSeller(payload);
+      if (response.success) {
+        onSwitchToLogin();
       }
-
-      const res = await registerSeller(payload);
-
-      if (res.status !== 200) {
-        throw new Error(res.message);
-      }
-      navigate("/verify-otp", {
-        state: {
-          email: formData.email,
-          role: "seller",
-          mode: "register",
-        },
-      });
     } catch (err) {
       setError(err.message || "Registration failed");
     } finally {
@@ -70,219 +96,184 @@ const SellerRegisterForm = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-gray-50 to-gray-100 py-8">
-      <div className="w-full max-w-2xl mx-4">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-primary mb-2">MartXpress</h1>
-          <p className="text-gray-600">Grow your business with us</p>
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {error && (
+        <div className="p-3 bg-red-50 text-red-600 rounded-xl text-sm font-bold text-center border border-red-100">
+          {error}
         </div>
+      )}
 
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-          <div className="bg-linear-to-r from-primary to-secondary p-6">
-            <h2 className="text-2xl font-bold text-white text-center">
-              Seller Registration
-            </h2>
-            <p className="text-white/80 text-center mt-2">
-              Join our marketplace and reach millions of customers
-            </p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Name */}
+        <div className="space-y-1">
+          <label className="text-xs font-bold text-gray-500 uppercase ml-1">
+            Full Name
+          </label>
+          <div className="relative group">
+            <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-primary transition-colors" />
+            <input
+              name="name"
+              onChange={handleChange}
+              required
+              className="w-full pl-10 pr-4 py-3.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:border-primary transition-all"
+              placeholder="John Doe"
+            />
           </div>
-
-          <div className="p-8">
-            {error && (
-              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-red-600 text-sm text-center font-medium">
-                  {error}
-                </p>
-              </div>
-            )}
-
-            {success && (
-              <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-                <p className="text-green-600 text-sm text-center font-medium">
-                  {success}
-                </p>
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Name */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Seller Name *
-                  </label>
-                  <input
-                    type="text"
-                    name="name"
-                    placeholder="Enter your full name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg 
-                      focus:ring-2 focus:ring-primary/30 focus:border-primary
-                      outline-none transition-all duration-200"
-                    required
-                  />
-                </div>
-
-                {/* Email */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email Address *
-                  </label>
-                  <input
-                    type="email"
-                    name="email"
-                    placeholder="Enter your email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg 
-                      focus:ring-2 focus:ring-primary/30 focus:border-primary
-                      outline-none transition-all duration-200"
-                    required
-                  />
-                </div>
-
-                {/* Mobile */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Mobile Number *
-                  </label>
-                  <input
-                    type="tel"
-                    name="mobile"
-                    placeholder="Enter 10-digit mobile number"
-                    value={formData.mobile}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg 
-                      focus:ring-2 focus:ring-primary/30 focus:border-primary
-                      outline-none transition-all duration-200"
-                    required
-                  />
-                </div>
-
-                {/* Shop Name */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Shop Name *
-                  </label>
-                  <input
-                    type="text"
-                    name="shopName"
-                    placeholder="Enter your shop name"
-                    value={formData.shopName}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg 
-                      focus:ring-2 focus:ring-primary/30 focus:border-primary
-                      outline-none transition-all duration-200"
-                    required
-                  />
-                </div>
-
-                {/* GST Number */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    GST Number *
-                  </label>
-                  <input
-                    type="text"
-                    name="gstNumber"
-                    placeholder="Enter GST number"
-                    value={formData.gstNumber}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg 
-                      uppercase focus:ring-2 focus:ring-primary/30 focus:border-primary
-                      outline-none transition-all duration-200"
-                    required
-                  />
-                </div>
-
-                {/* GST Certificate */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    GST Certificate (Optional)
-                  </label>
-                  <div
-                    className="border-2 border-dashed border-gray-300 rounded-lg p-4
-                    hover:border-primary transition-colors"
-                  >
-                    <input
-                      type="file"
-                      accept=".pdf,.jpg,.png"
-                      onChange={handleFileChange}
-                      className="w-full text-sm"
-                    />
-                    {gstCertificate && (
-                      <p className="text-sm text-green-600 mt-2">
-                        ✓ {gstCertificate.name}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Terms */}
-              <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg">
-                <input
-                  type="checkbox"
-                  name="TermsAndCdn"
-                  checked={formData.TermsAndCdn}
-                  onChange={handleChange}
-                  className="h-5 w-5 mt-0.5 text-primary focus:ring-primary"
-                  required
-                />
-                <span className="text-sm text-gray-600">
-                  I agree to the MartXpress Seller Terms & Conditions. I
-                  understand that my shop information will be verified before
-                  approval.
-                </span>
-              </div>
-
-              {/* Submit */}
-              <button
-                type="submit"
-                disabled={loading || !formData.TermsAndCdn}
-                className="w-full bg-primary hover:bg-primary/90 text-white font-semibold 
-                  py-3 px-4 rounded-lg transition-all duration-200
-                  transform hover:scale-[1.02] active:scale-[0.98]
-                  disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-              >
-                {loading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Registering...
-                  </span>
-                ) : (
-                  "Register as Seller"
-                )}
-              </button>
-            </form>
-
-            <div className="mt-8 pt-6 border-t border-gray-200">
-              <p className="text-center text-gray-600 text-sm">
-                Already have an account?{" "}
-                <button
-                  type="button"
-                  onClick={() => navigate("/login")}
-                  className="text-primary font-semibold hover:text-primary/80 transition-colors"
-                >
-                  Sign in
-                </button>
-              </p>
-              <p className="text-center text-gray-600 text-sm mt-2">
-                Want to shop with us?{" "}
-                <button
-                  type="button"
-                  onClick={() => navigate("/users/auth")}
-                  className="text-secondary font-semibold hover:text-secondary/80 transition-colors"
-                >
-                  Create customer account
-                </button>
-              </p>
-            </div>
+        </div>
+        {/* Email */}
+        <div className="space-y-1">
+          <label className="text-xs font-bold text-gray-500 uppercase ml-1">
+            Business Email
+          </label>
+          <div className="relative group">
+            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-primary transition-colors" />
+            <input
+              name="email"
+              type="email"
+              onChange={handleChange}
+              required
+              className="w-full pl-10 pr-4 py-3.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:border-primary transition-all"
+              placeholder="john@shop.com"
+            />
+          </div>
+        </div>
+        {/* Shop Name */}
+        <div className="space-y-1">
+          <label className="text-xs font-bold text-gray-500 uppercase ml-1">
+            Shop Name
+          </label>
+          <div className="relative group">
+            <Store className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-primary transition-colors" />
+            <input
+              name="shopName"
+              onChange={handleChange}
+              required
+              className="w-full pl-10 pr-4 py-3.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:border-primary transition-all"
+              placeholder="Electro Hub"
+            />
+          </div>
+        </div>
+        {/* GST Number */}
+        <div className="space-y-1">
+          <label className="text-xs font-bold text-gray-500 uppercase ml-1">
+            GST Number
+          </label>
+          <div className="relative group">
+            <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-primary transition-colors" />
+            <input
+              name="gstNumber"
+              onChange={handleChange}
+              required
+              className="w-full pl-10 pr-4 py-3.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:border-primary transition-all uppercase"
+              placeholder="22AAAAA0000A1Z5"
+            />
           </div>
         </div>
       </div>
-    </div>
+
+      {/* GST File */}
+      <div className="space-y-1">
+        <label className="text-xs font-bold text-gray-500 uppercase ml-1">
+          GST Certificate (PDF/Image)
+        </label>
+        <div className="relative group cursor-pointer flex items-center">
+          <FileText className="absolute left-3 h-4 w-4 text-gray-400" />
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            accept=".jpg, .pdf, .jpeg, .png"
+            className="w-full pl-10 cursor-pointer pr-12 p-2 text-sm text-gray-500 border border-dashed border-gray-300 dark:border-gray-700 rounded-xl bg-gray-50/50 dark:bg-gray-800/50 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 transition-all"
+          />
+
+          {gstCertificate && (
+            <button
+              type="button"
+              onClick={handleRemoveFile}
+              className="absolute cursor-pointer right-3 p-1.5 bg-red-100 text-red-600 rounded-full hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 transition-colors shadow-sm"
+              title="Remove file"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+        {gstCertificate && (
+          <p className="text-[10px] text-primary font-medium ml-2 mt-1 truncate max-w-[90%]">
+            Selected: {gstCertificate.name}
+          </p>
+        )}
+      </div>
+
+      {/* Passwords Section */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Password */}
+        <div className="relative group">
+          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-primary transition-colors" />
+          <input
+            name="password"
+            type={showPass ? "text" : "password"}
+            placeholder="Password"
+            onChange={handleChange}
+            required
+            className="w-full pl-10 pr-10 py-3.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:border-primary transition-all"
+          />
+          <button
+            type="button"
+            onClick={() => setShowPass(!showPass)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary transition-colors"
+          >
+            {showPass ? (
+              <EyeOff className="h-4 w-4" />
+            ) : (
+              <Eye className="h-4 w-4" />
+            )}
+          </button>
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-xs font-bold text-gray-500 uppercase ml-1">
+            Mobile Number
+          </label>
+          <div className="relative group">
+            <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-primary transition-colors" />
+            <input
+              name="mobile"
+              type="tel"
+              onChange={handleChange}
+              required
+              className="w-full pl-10 pr-4 py-3.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:border-primary transition-all"
+              placeholder="9876543210"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Terms */}
+      <div className="flex items-center gap-2 p-2">
+        <input
+          type="checkbox"
+          name="TermsAndCdn"
+          id="terms"
+          onChange={handleChange}
+          required
+          className="h-4 w-4 rounded text-primary border-gray-300 focus:ring-primary cursor-pointer"
+        />
+        <label
+          htmlFor="terms"
+          className="text-xs text-gray-500 select-none cursor-pointer"
+        >
+          I agree to the Seller Terms & Conditions
+        </label>
+      </div>
+
+      <button
+        type="submit"
+        disabled={loading}
+        className="w-full cursor-pointer bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-2xl shadow-lg shadow-primary/20 transition-all active:scale-[0.98] disabled:opacity-50"
+      >
+        {loading ? "Creating Account..." : "Register as Seller"}
+      </button>
+    </form>
   );
 };
 

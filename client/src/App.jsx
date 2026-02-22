@@ -21,7 +21,6 @@ import SellersDashboard from "./Pages/Sellers/SellersDashboard";
 
 import { ToastContainer, toast } from "react-toastify";
 import UsersAuth from "./Pages/Users/UsersAuth";
-import VerifyRegisterLoginOtp from "./Components/Common/Auth/Common/VerifyRegisterLoginOtp";
 import UsersDashBoard from "./Pages/Users/UsersDashBoard";
 import AdminDashBoard from "./Pages/Admin/AdminDashBoard";
 import AdminAuth from "./Pages/Admin/AdminAuth";
@@ -53,7 +52,6 @@ const App = () => {
           <Route path="/users/auth" element={<UsersAuth />} />
           <Route path="/sellers/auth" element={<SellerAuth />} />
           <Route path="/admins/auth" element={<AdminAuth />} />
-          <Route path="/verify-otp" element={<VerifyRegisterLoginOtp />} />
 
           {/* Dashboard  */}
           <Route

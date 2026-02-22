@@ -1,5 +1,5 @@
 import express from "express";
-import { verifyToken, verifyUser } from "../middleware/authMiddleware.js";
+import { verifyToken, authorizeRoles } from "../middleware/authMiddleware.js";
 import {
   placeOrder,
   getMyOrders,
@@ -11,7 +11,7 @@ import {
 } from "../middleware/orderRateLimiter.js";
 import { cacheMiddleware } from "../middleware/redisMiddleware.js";
 const router = express.Router();
-router.use(verifyToken, verifyUser);
+router.use(verifyToken, authorizeRoles("user"));
 
 router.post("/place", placeOrder);
 router.get(

@@ -1,368 +1,161 @@
 import userModel from "../models/usersModel.js";
 import sellerModel from "../models/sellersModel.js";
 import adminModel from "../models/adminModel.js";
-import otpModel from "../models/otpModel.js";
-import jwt from "jsonwebtoken";
+import { generateToken } from "../Helper/generateToken.js";
 import bcrypt from "bcryptjs";
+import { hashPassword } from "../Helper/hashPassword.js";
+import { CustomError } from "../utils/customError.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
+import { checkEmailExists } from "../Helper/checkEmailExists.js";
+// ------------------------------ LOGIN FUNCTION FOR ALL  --------------------------------
+export const login = asyncHandler(async (req, res) => {
+  const { email, password } = req.body;
 
-import { generateAndSendOtp } from "../utils/otpHelper.js";
-
-// Update your loginUsers function in backend
-
-export const login = async (req, res) => {
-  try {
-    const { email } = req.body;
-    console.log("From Frontend : ", email)
-    if (!email) {
-      return res.status(200).json({
-        status: 400,
-        message: "Email is required",
-      });
-    }
-
-    let user = await userModel.findOne({ email });
-    let role = "user";
-
-    if (!user) {
-      user = await sellerModel.findOne({ email });
-      role = "seller";
-    }
-
-    if (!user) {
-      user = await adminModel.findOne({ email });
-      role = "admin";
-    }
-
-    if (!user) {
-      return res.status(200).json({
-        status: 404,
-        message: "Email does not exist",
-      });
-    }
-
-    // ✅ ONLY send OTP (NO STATUS CHECK)
-    await generateAndSendOtp(user._id, role, email, user.name);
-
-    return res.status(200).json({
-      status: 200,
-      message: "OTP sent to your email",
-      role,
-    });
-  } catch (error) {
-    console.error("Login error:", error);
-    return res.status(200).json({
-      status: 500,
-      message: "Internal Server Error",
-    });
+  //  validation
+  if (!email || !password) {
+    throw new CustomError("Email and Password are required", 400);
   }
-};
 
-// export const verifyLoginOtp = async (req, res) => {
-//   try {
-//     const { email, otp } = req.body;
+  const [userData, sellerData, adminData] = await Promise.all([
+    userModel.findOne({ email }).select("+password"),
+    sellerModel.findOne({ email }).select("+password"),
+    adminModel.findOne({ email }).select("+password"),
+  ]);
 
-//     if (!email || !otp) {
-//       return res.status(200).json({
-//         status: 400,
-//         message: "Email and OTP are required",
-//       });
-//     }
+  let user = userData || sellerData || adminData;
+  let role = userData ? "user" : sellerData ? "seller" : "admin";
 
-//     const existingOtp = await otpModel.findOne({ email, otp });
-//     if (!existingOtp) {
-//       return res.status(200).json({
-//         status: 400,
-//         message: "Invalid Email or OTP",
-//       });
-//     }
-
-//     if (existingOtp.otpExpiry < Date.now()) {
-//       await otpModel.deleteOne({ _id: existingOtp._id });
-//       return res.status(200).json({
-//         status: 410,
-//         message: "OTP Expired",
-//       });
-//     }
-
-//     let user;
-//     const role = existingOtp.role;
-
-//     if (role === "user") user = await userModel.findById(existingOtp.userId);
-//     if (role === "seller")
-//       user = await sellerModel.findById(existingOtp.userId);
-//     if (role === "admin") user = await adminModel.findById(existingOtp.userId);
-
-//     if (!user) {
-//       return res.status(200).json({
-//         status: 404,
-//         message: "User not found",
-//       });
-//     }
-
-//     // Cleanup OTP
-//     await otpModel.findByIdAndDelete(existingOtp._id);
-
-//     // 🔐 Generate JWT
-//     const token = jwt.sign(
-//       { id: user._id, role, email: user.email },
-//       process.env.JWT_SECRET,
-//       { expiresIn: "7d" }
-//     );
-
-//     return res.status(200).json({
-//       status: 200,
-//       message: "Login successful",
-//       token,
-//       user,
-//       role,
-//     });
-//   } catch (error) {
-//     console.error("Verify login OTP error:", error);
-//     return res.status(200).json({
-//       status: 500,
-//       message: "Internal Server Error",
-//     });
-//   }
-// };
-
-export const registerUsers = async (req, res) => {
-  try {
-    const { email } = req.body;
-
-    const existingUsers =
-      (await userModel.findOne({ email })) ||
-      (await sellerModel.findOne({ email })) ||
-      (await adminModel.findOne({ email }));
-
-    if (existingUsers) {
-      return res
-        .status(200)
-        .json({ status: 400, message: "Email Already Exists." });
-    }
-
-    const newUsers = new userModel({ email });
-    await newUsers.save();
-
-    await generateAndSendOtp(newUsers._id, "user", email);
-
-    return res
-      .status(200)
-      .json({ status: 200, message: "Otp Sent to your email." });
-  } catch (error) {
-    console.error("Error while Registering Users Profile:", error);
-    res.status(200).json({ status: 500, message: error.message });
+  // don't reveal email existence
+  if (!user) {
+    throw new CustomError("Invalid credentials", 401);
   }
-};
+
+  // password check
+  const isMatch = await bcrypt.compare(password, user.password);
+
+  if (!isMatch) {
+    throw new CustomError("Invalid credentials", 401);
+  }
+
+  // seller verification
+  if (role === "seller") {
+    if (user.verified !== "approved") {
+      throw new CustomError(
+        "Account not approved. Please contact support.",
+        403,
+      );
+    }
+  }
+
+  // generate token
+  const token = generateToken({
+    id: user._id,
+    role: role,
+  });
+
+  // secure cookie (VERY IMPORTANT)
+  res.cookie("token", token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "None" : "Strict",
+    maxAge: 24 * 60 * 60 * 1000,
+  });
+
+  res.status(200).json({
+    success: true,
+    message: "Login successful",
+    user: {
+      email: user.email,
+      name: user.name || "",
+    },
+    role,
+  });
+});
+
+// ---------------------  REGSITER USER  --------------------------------
+export const registerUsers = asyncHandler(async (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) {
+    throw new CustomError("Email and Password are required", 400);
+  }
+  const exists = await checkEmailExists(email);
+  if (exists) {
+    throw new CustomError("Email already registered with another account", 400);
+  }
+  await userModel.create({
+    email,
+    password,
+  });
+  res.status(201).json({
+    success: true,
+    message: "User registered successfully",
+  });
+});
 
 // ---------------------- REGISTER ADMIN ----------------------
-export const registerAdmin = async (req, res) => {
-  try {
-    const { email } = req.body;
+export const registerAdmin = asyncHandler(async (req, res) => {
+  const { email, password } = req.body;
 
-    const existingUsers =
-      (await userModel.findOne({ email })) ||
-      (await sellerModel.findOne({ email })) ||
-      (await adminModel.findOne({ email }));
-
-    if (existingUsers) {
-      return res
-        .status(200)
-        .json({ status: 400, message: "Email Already Exists." });
-    }
-
-    const newAdmin = new adminModel({ email });
-    await newAdmin.save();
-
-    await generateAndSendOtp(newAdmin._id, "admin", email);
-
-    return res
-      .status(200)
-      .json({ status: 200, message: "Otp Sent to your email." });
-  } catch (error) {
-    console.error("Error while Registering Admin Profile:", error);
-    res.status(200).json({ status: 500, message: error.message });
+  if (!email || !password) {
+    throw new CustomError("Email and Password required", 400);
   }
-};
 
-export const registerSeller = async (req, res) => {
-  try {
-    const { name, email, mobile, shopName, gstNumber, TermsAndCdn } = req.body;
-    const gstCertificate = req.file;
+  const exists = await checkEmailExists(email);
 
-    if (!name || !email || !mobile || !shopName || !gstNumber) {
-      return res.status(200).json({
-        status: 400,
-        message: "All fields are required",
-      });
-    }
-
-    if (!(TermsAndCdn === true || TermsAndCdn === "true")) {
-      return res.status(200).json({
-        status: 400,
-        message: "Please agree to Terms & Conditions",
-      });
-    }
-
-    const exists =
-      (await userModel.findOne({ email })) ||
-      (await adminModel.findOne({ email })) ||
-      (await sellerModel.findOne({ email })) ||
-      (await sellerModel.findOne({ gstNumber }));
-
-    if (exists) {
-      return res.status(200).json({
-        status: 400,
-        message: "Email or GST already exists",
-      });
-    }
-
-    const seller = await sellerModel.create({
-      name,
-      email,
-      mobile,
-      shopName,
-      gstNumber,
-      TermsAndCdn,
-      verified: "pending",
-    });
-
-    await generateAndSendOtp(seller._id, "seller", email, name);
-
-    return res.status(200).json({
-      status: 200,
-      message: "OTP sent to your email. Please verify to continue.",
-    });
-  } catch (error) {
-    console.error("Register seller error:", error);
-    return res.status(200).json({
-      status: 500,
-      message: error.message,
-    });
+  if (exists) {
+    throw new CustomError("Email already registered with another account", 400);
   }
-};
 
-// ---------------------- VERIFY REGISTER OTP ----------------------
-export const verifyOtp = async (req, res) => {
-  try {
-    const { email, otp } = req.body;
+  await adminModel.create({
+    email,
+    password,
+  });
 
-    const existingOtp = await otpModel.findOne({ email, otp });
+  res.status(201).json({
+    success: true,
+    message: "Admin registered successfully",
+  });
+});
+// ---------------------- REGISTER SELLER ----------------------
+export const registerSeller = asyncHandler(async (req, res) => {
+  const { name, email, mobile, shopName, gstNumber, TermsAndCdn, password } =
+    req.body;
 
-    if (!existingOtp) {
-      return res.status(200).json({
-        status: 400,
-        message: "Invalid Email or OTP",
-      });
-    }
+  // Make GST Certificate optional
+  let gstCertificateData = null;
 
-    if (existingOtp.otpExpiry < Date.now()) {
-      await otpModel.findByIdAndDelete(existingOtp._id);
-      return res.status(200).json({
-        status: 410,
-        message: "OTP Expired",
-      });
-    }
-
-    let user;
-    const role = existingOtp.role;
-
-    if (role === "user") user = await userModel.findById(existingOtp.userId);
-    if (role === "seller") user = await sellerModel.findById(existingOtp.userId);
-    if (role === "admin") user = await adminModel.findById(existingOtp.userId);
-
-    if (!user) {
-      return res.status(200).json({
-        status: 404,
-        message: "User not found",
-      });
-    }
-
-    // ✅ Email verified
-    if (!user.isEmailVerified) {
-      user.isEmailVerified = true;
-      await user.save();
-    }
-
-    // 🔴 SELLER STATUS CHECK (ONLY HERE)
-    if (role === "seller") {
-      if (user.verified === "pending") {
-        return res.status(200).json({
-          status: 403,
-          message: "Your profile is under admin review.",
-        });
-      }
-
-      if (user.verified === "rejected") {
-        return res.status(200).json({
-          status: 403,
-          message: "Your profile is rejected. Please contact admin support.",
-        });
-      }
-    }
-
-    // Cleanup OTP
-    await otpModel.findByIdAndDelete(existingOtp._id);
-
-    // 🔐 Generate token ONLY if allowed
-    const token = jwt.sign(
-      { id: user._id, role, email: user.email },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" }
-    );
-
-    return res.status(200).json({
-      status: 200,
-      message: "Verification successful",
-      token,
-      role,
-    });
-  } catch (error) {
-    console.error("Verify OTP error:", error);
-    return res.status(200).json({
-      status: 500,
-      message: "Internal Server Error",
-    });
+  if (req.file) {
+    gstCertificateData = {
+      fileName: req.file.originalname || req.file.filename,
+      path: req.file.path,
+      uploadedAt: new Date(),
+    };
   }
-};
 
-export const resendOtp = async (req, res) => {
-  try {
-    const { email } = req.body;
-    if (!email) {
-      return res.status(400).json({ message: "Email is required" });
-    }
-
-    let user, role;
-
-    user = await userModel.findOne({ email });
-    if (user) role = "user";
-
-    if (!user) {
-      user = await sellerModel.findOne({ email });
-      if (user) role = "seller";
-    }
-
-    if (!user) {
-      user = await adminModel.findOne({ email });
-      if (user) role = "admin";
-    }
-
-    if (!user) {
-      return res.status(404).json({
-        message: "User not found with this email",
-      });
-    }
-
-    await otpModel.deleteMany({ email });
-    await generateAndSendOtp(user._id, role, email, user.name);
-
-    return res.status(200).json({
-      message: "OTP resent successfully",
-    });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({
-      message: "Failed to resend OTP",
-    });
+  const exists = await checkEmailExists(email);
+  if (exists) {
+    throw new CustomError("Email already registered with another account", 400);
   }
-};
+
+  const gstExists = await sellerModel.findOne({ gstNumber });
+  if (gstExists) {
+    throw new CustomError("GST already registered", 400);
+  }
+
+  await sellerModel.create({
+    name,
+    email,
+    mobile,
+    shopName,
+    gstNumber, // Still required by Zod schema
+    TermsAndCdn,
+    password,
+    gstCertificate: gstCertificateData, // Will be null if no file was uploaded
+    verified: "pending",
+  });
+
+  res.status(201).json({
+    success: true,
+    message: "You are ready to sell.",
+  });
+});

@@ -18,7 +18,7 @@ import helmet from "helmet";
 import cors from "cors";
 import compression from "compression";
 import colors from "colors";
-
+import cookieParser from "cookie-parser";
 /**
  * =========================
  * LOCAL IMPORTS
@@ -63,7 +63,7 @@ app.use(
   helmet({
     contentSecurityPolicy: false,
     crossOriginEmbedderPolicy: false,
-  })
+  }),
 );
 
 app.use(compression());
@@ -79,7 +79,7 @@ app.use(
   cors({
     origin: true,
     credentials: true,
-  })
+  }),
 );
 
 /**
@@ -89,6 +89,7 @@ app.use(
  */
 app.use(morgan("dev"));
 app.use(express.json());
+app.use(cookieParser());
 
 /**
  * =========================
@@ -128,9 +129,7 @@ app.use(express.static(path.join(__dirname, "client/dist")));
 
 // SPA fallback (VERY IMPORTANT)
 app.use((req, res) => {
-  res.sendFile(
-    path.resolve(__dirname, "client", "dist", "index.html")
-  );
+  res.sendFile(path.resolve(__dirname, "client", "dist", "index.html"));
 });
 
 /**
@@ -146,5 +145,5 @@ app.use(errorMiddleware);
  * =========================
  */
 app.listen(port, () => {
-  console.log(`🚀 Server running at http://localhost:${port}`.green.bold);
+  console.log(`Server running at http://localhost:${port}`.green.bold);
 });

@@ -224,7 +224,7 @@ const AdminAuth = () => {
                   <div className="grid grid-cols-2 gap-1">
                     <button
                       onClick={() => setIsLogin(true)}
-                      className={`py-3 px-6 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${
+                      className={`cursor-pointer py-3 px-6 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${
                         isLogin
                           ? "bg-white dark:bg-gray-800 text-red-600 shadow-md"
                           : "text-gray-600 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-gray-600/50"
@@ -235,7 +235,7 @@ const AdminAuth = () => {
                     </button>
                     <button
                       onClick={() => setIsLogin(false)}
-                      className={`py-3 px-6 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${
+                      className={` cursor-pointer py-3 px-6 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${
                         !isLogin
                           ? "bg-white dark:bg-gray-800 text-red-600 shadow-md"
                           : "text-gray-600 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-gray-600/50"
@@ -279,79 +279,6 @@ const AdminAuth = () => {
                 </div>
               </div>
             </div>
-
-            {/* Quick Info */}
-            <div className="bg-linear-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
-              <h3 className="font-bold text-gray-800 dark:text-white mb-4">
-                Access Guidelines
-              </h3>
-              <ul className="space-y-3">
-                <li className="flex items-start gap-3">
-                  <div className="h-5 w-5 rounded-full bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400 flex items-center justify-center text-xs mt-0.5 shrink-0">
-                    ✓
-                  </div>
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
-                    Use VPN for remote access
-                  </span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <div className="h-5 w-5 rounded-full bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400 flex items-center justify-center text-xs mt-0.5 shrink-0">
-                    ✓
-                  </div>
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
-                    Session timeout after 30 minutes of inactivity
-                  </span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <div className="h-5 w-5 rounded-full bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400 flex items-center justify-center text-xs mt-0.5 shrink-0">
-                    ✓
-                  </div>
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
-                    All actions are logged and monitored
-                  </span>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom Footer */}
-        <div className="mt-16 pt-8 border-t border-gray-200 dark:border-gray-800">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="text-center md:text-left">
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                © {new Date().getFullYear()} MartXpress Admin Portal v2.0
-              </p>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                Built with enterprise security standards
-              </p>
-            </div>
-
-            <div className="flex items-center gap-6">
-              <button className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
-                Privacy Policy
-              </button>
-              <div className="h-4 w-px bg-gray-300 dark:bg-gray-700"></div>
-              <button className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
-                Terms of Service
-              </button>
-              <div className="h-4 w-px bg-gray-300 dark:bg-gray-700"></div>
-              <button className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
-                Compliance
-              </button>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></div>
-                <span className="text-sm text-gray-500 dark:text-gray-400">
-                  System Status:{" "}
-                </span>
-                <span className="text-sm font-semibold text-green-600">
-                  Operational
-                </span>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -359,20 +286,14 @@ const AdminAuth = () => {
       {/* Add CSS for grid pattern */}
       <style jsx>{`
         .bg-grid-pattern {
-          background-image: linear-gradient(
-              to right,
-              #e5e7eb 1px,
-              transparent 1px
-            ),
+          background-image:
+            linear-gradient(to right, #e5e7eb 1px, transparent 1px),
             linear-gradient(to bottom, #e5e7eb 1px, transparent 1px);
           background-size: 40px 40px;
         }
         .dark .bg-grid-pattern {
-          background-image: linear-gradient(
-              to right,
-              #374151 1px,
-              transparent 1px
-            ),
+          background-image:
+            linear-gradient(to right, #374151 1px, transparent 1px),
             linear-gradient(to bottom, #374151 1px, transparent 1px);
         }
       `}</style>

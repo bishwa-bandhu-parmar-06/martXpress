@@ -1,95 +1,90 @@
 import sellerModel from "../models/sellersModel.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
+import {CustomError} from "../utils/customError.js";
 
 // ----------------- GET SELLER PROFILE -----------------
-export const getSellerProfile = async (req, res) => {
-  try {
-    const { id } = req.user;
-    
-    // 🔹 2. DB se fetch
-    const sellersData = await sellerModel.findById(id).populate("addresses");
+export const getSellerProfile = asyncHandler(async (req, res) => {
+  // Use sub (JWT standard) or fallback to id
+  const sellerId = req.user.sub || req.user.id;
 
-    if (!sellersData) {
-      return res.status(404).json({
-        status: 404,
-        message: "Seller not found",
-      });
-    }
+  // Fetch from DB
+  const sellersData = await sellerModel
+    .findById(sellerId)
+    .populate("addresses");
 
-    // Approval check
-    if (sellersData.verified === "pending") {
-      return res.status(200).json({
-        status: 403,
-        message: "Your profile is under review by admin. Please wait.",
-      });
-    }
-
-    if (sellersData.verified === "rejected") {
-      return res.status(200).json({
-        status: 403,
-        message: "Your profile has been rejected. Please contact support.",
-      });
-    }
-
-    // Only approved sellers get full profile
-    if (sellersData.verified === "approved") {
-      
-      return res.status(200).json({
-        status: 200,
-        message: "Seller profile fetched successfully",
-        seller: sellersData,
-      });
-    }
-  } catch (error) {
-    console.error("Error While fetching the Sellers data : ", error);
-    res.status(500).json({ message: error.message || "Something went wrong" });
+  if (!sellersData) {
+    throw new CustomError("Seller not found", 404);
   }
-};
+
+  if (sellersData.verified === "pending") {
+    return res.status(200).json({
+      status: 403,
+      message: "Your profile is under review by admin. Please wait.",
+      seller: sellersData,
+    });
+  }
+
+  if (sellersData.verified === "rejected") {
+    return res.status(200).json({
+      status: 403,
+      message: "Your profile has been rejected. Please contact support.",
+      seller: sellersData,
+    });
+  }
+
+  // Only approved sellers get here
+  res.status(200).json({
+    status: 200,
+    message: "Seller profile fetched successfully",
+    seller: sellersData,
+  });
+});
 
 // ----------------- UPDATE SELLER DETAILS -----------------
-export const updateSellerDetails = async (req, res) => {
-  try {
-    const { id } = req.user;
+export const updateSellerDetails = asyncHandler(async (req, res) => {
+  const sellerId = req.user.sub || req.user.id;
+  const body = req.body || {};
 
-    const body = req.body || {};
+  const updateData = {
+    ...(body.name && { name: body.name }),
+    ...(body.email && { email: body.email }),
+    ...(body.mobile && { mobile: body.mobile }),
+    ...(body.shopName && { shopName: body.shopName }),
+    ...(body.gstNumber && { gstNumber: body.gstNumber }),
+    ...(body.udyamNumber && { udyamNumber: body.udyamNumber }),
+    ...(body.panNumber && { panNumber: body.panNumber }),
+  };
 
-    const updateData = {
-      ...(body.name && { name: body.name }),
-      ...(body.email && { email: body.email }),
-      ...(body.mobile && { mobile: body.mobile }),
-      ...(body.shopName && { shopName: body.shopName }),
-      ...(body.gstNumber && { gstNumber: body.gstNumber }),
-      ...(body.udyamNumber && { udyamNumber: body.udyamNumber }),
-      ...(body.panNumber && { panNumber: body.panNumber }),
+  // File uploads handling
+  if (req.files?.gstCertificate?.[0]) {
+    updateData.gstCertificate = {
+      fileName:
+        req.files.gstCertificate[0].originalname ||
+        req.files.gstCertificate[0].filename,
+      path: req.files.gstCertificate[0].path,
+      uploadedAt: new Date(),
     };
-
-    // ✅ File uploads optional
-    if (req.files?.gstCertificate?.[0]) {
-      updateData.gstCertificate = req.files.gstCertificate[0].path;
-    }
-    if (req.files?.udyamCertificate?.[0]) {
-      updateData.udyamCertificate = req.files.udyamCertificate[0].path;
-    }
-
-    if (Object.keys(updateData).length === 0) {
-      return res.status(400).json({
-        message: "No fields provided for update",
-      });
-    }
-
-    const updatedSeller = await sellerModel
-      .findByIdAndUpdate(id, updateData, { new: true })
-      .populate("addresses");
-
-    if (!updatedSeller) {
-      return res.status(404).json({ message: "Seller not found" });
-    }
-
-    res.status(200).json({
-      message: "Seller details updated successfully",
-      seller: updatedSeller,
-    });
-  } catch (error) {
-    console.error("Error updating seller:", error);
-    res.status(500).json({ message: error.message });
   }
-};
+
+  if (req.files?.udyamCertificate?.[0]) {
+    updateData.udyamCertificate = req.files.udyamCertificate[0].path;
+  }
+
+  if (Object.keys(updateData).length === 0) {
+    throw new CustomError("No fields provided for update", 400);
+  }
+
+  const updatedSeller = await sellerModel
+    .findByIdAndUpdate(sellerId, updateData, { new: true, runValidators: true })
+    .populate("addresses");
+
+  if (!updatedSeller) {
+    throw new CustomError("Seller not found", 404);
+  }
+
+  res.status(200).json({
+    status: 200,
+    message: "Seller details updated successfully",
+    seller: updatedSeller,
+  });
+});

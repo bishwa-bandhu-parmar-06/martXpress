@@ -6,9 +6,14 @@ const adminSchema = new mongoose.Schema(
   {
     name: {
       type: String,
-      // required: [true, "Please enter admin name"],
       trim: true,
     },
+    password: {
+      type: String,
+      select: false,
+      required: [true, "Please enter password"],
+    },
+
     email: {
       type: String,
       required: [true, "Please enter admin email"],
@@ -27,7 +32,7 @@ const adminSchema = new mongoose.Schema(
         message: "Please enter a valid 10-digit phone number",
       },
     },
-// Addresses (reference Address model)
+    // Addresses (reference Address model)
     addresses: [
       {
         type: mongoose.Schema.Types.ObjectId,
@@ -55,8 +60,13 @@ const adminSchema = new mongoose.Schema(
     isActive: { type: Boolean, default: true },
     lastLogin: { type: Date },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
+adminSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
 
+  this.password = await bcrypt.hash(this.password, 10);
+  next();
+});
 const Admin = mongoose.model("admin", adminSchema);
 export default Admin;

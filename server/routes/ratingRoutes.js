@@ -2,7 +2,7 @@ import express from "express";
 import rateLimit from "express-rate-limit";
 import RedisStore from "rate-limit-redis";
 
-import { verifyToken, verifyUser } from "../middleware/authMiddleware.js";
+import { verifyToken, authorizeRoles } from "../middleware/authMiddleware.js";
 import {
   addOrUpdateRating,
   getProductRatings,
@@ -11,6 +11,7 @@ import {
 } from "../controllers/ratingControllers.js";
 
 import redisClient from "../config/redisClient.js";
+import { cacheMiddleware } from "../middleware/redisMiddleware.js";
 
 const router = express.Router();
 
@@ -41,7 +42,7 @@ const ratingReadLimiter = rateLimit({
 /* ---------------- ROUTES ---------------- */
 
 // Login required
-router.use(verifyToken, verifyUser);
+router.use(verifyToken, authorizeRoles("user"));
 
 // Add or update rating
 router.post(
@@ -53,6 +54,7 @@ router.post(
 // Get all ratings for a product
 router.get(
   "/product-all-rating/:productId",
+  cacheMiddleware(5 * 60), 
   // ratingReadLimiter,
   getProductRatings
 );
@@ -61,6 +63,7 @@ router.get(
 router.get(
   "/product-rating/:productId",
   // ratingReadLimiter,
+    cacheMiddleware(5 * 60), 
   getMyRating
 );
 

@@ -2,7 +2,7 @@ import express from "express";
 import rateLimit from "express-rate-limit";
 import RedisStore from "rate-limit-redis";
 
-import { verifyToken } from "../middleware/authMiddleware.js";
+import { verifyToken , authorizeRoles} from "../middleware/authMiddleware.js";
 import redisClient from "../config/redisClient.js";
 
 import {
@@ -16,6 +16,7 @@ import {
   getAllAddresses,
   getSingleAddress,
 } from "../controllers/addressControllers.js";
+import { cacheMiddleware } from "../middleware/redisMiddleware.js";
 
 const routes = express.Router();
 
@@ -55,19 +56,18 @@ const addressWriteLimiter = rateLimit({
 /* ---------------- ROUTES ---------------- */
 
 // Auth required
-routes.use(verifyToken);
-
+routes.use(verifyToken, authorizeRoles("user"));
 // User profile
-routes.get("/user-profile",  getUserProfile);
+routes.get("/user-profile", cacheMiddleware(5 * 60), getUserProfile);
 
 routes.post("/update-user-details",  updateUsersDetails);
 
 // Address management
-routes.post("/add-user-address", addAddress);
+routes.post("/add-user-address", cacheMiddleware(5 * 60),addAddress);
 
-routes.get("/all-user-address", getAllAddresses);
+routes.get("/all-user-address", cacheMiddleware(5 * 60),getAllAddresses);
 
-routes.get("/single-address/:addressId", getSingleAddress);
+routes.get("/single-address/:addressId", cacheMiddleware(5 * 60),getSingleAddress);
 
 routes.post(
   "/update-user-address/:addressId",

@@ -2,7 +2,7 @@ import express from "express";
 import rateLimit from "express-rate-limit";
 import RedisStore from "rate-limit-redis";
 
-import { verifyToken, verifyUser } from "../middleware/authMiddleware.js";
+import { verifyToken, authorizeRoles } from "../middleware/authMiddleware.js";
 import redisClient from "../config/redisClient.js";
 
 import {
@@ -11,6 +11,7 @@ import {
   removeFromWishlist,
   clearWishlist,
 } from "../controllers/wishlistControllers.js";
+import { cacheMiddleware } from "../middleware/redisMiddleware.js";
 
 const router = express.Router();
 
@@ -53,16 +54,15 @@ const wishlistClearLimiter = rateLimit({
 
 /* ---------------- ROUTES ---------------- */
 
-router.use(verifyToken, verifyUser);
+router.use(verifyToken, authorizeRoles("user"));
 
 // Wishlist routes
 router.post("/add-to-wishlist", addToWishlist);
 
-router.get("/get-all-wishlist", getWishlist);
+router.get("/get-all-wishlist",cacheMiddleware(5 * 60), getWishlist);
 
 router.post(
   "/remove-wishlist/:productId",
-  // wishlistWriteLimiter,
   removeFromWishlist,
 );
 

@@ -2,7 +2,7 @@ import express from "express";
 import rateLimit from "express-rate-limit";
 import RedisStore from "rate-limit-redis";
 
-import { verifyToken } from "../middleware/authMiddleware.js";
+import { verifyToken, authorizeRoles } from "../middleware/authMiddleware.js";
 import { upload } from "../uploads/multer.js";
 import redisClient from "../config/redisClient.js";
 
@@ -17,6 +17,7 @@ import {
   getAllAddresses,
   getSingleAddress,
 } from "../controllers/addressControllers.js";
+import { cacheMiddleware } from "../middleware/redisMiddleware.js";
 
 const routes = express.Router();
 
@@ -56,10 +57,10 @@ const addressWriteLimiter = rateLimit({
 /* ---------------- ROUTES ---------------- */
 
 // Auth required
-routes.use(verifyToken);
+routes.use(verifyToken, authorizeRoles("seller"));
 
 // Seller profile
-routes.get("/seller-profile", getSellerProfile);
+routes.get("/seller-profile",   cacheMiddleware(5 * 60),getSellerProfile);
 
 // Update seller details (files + DB)
 routes.post(
@@ -73,15 +74,16 @@ routes.post(
 );
 
 // Address management
-routes.post("/add-seller-address", addAddress);
+routes.post("/add-seller-address",cacheMiddleware(5 * 60), addAddress);
 
-routes.get("/all-seller-address", getAllAddresses);
+routes.get("/all-seller-address",cacheMiddleware(5 * 60), getAllAddresses);
 
-routes.get("/single-address/:addressId", getSingleAddress);
+routes.get("/single-address/:addressId",cacheMiddleware(5 * 60), getSingleAddress);
 
 routes.post(
   "/update-seller-address/:addressId",
   // addressWriteLimiter,
+  cacheMiddleware(5 * 60),
   updateAddress,
 );
 

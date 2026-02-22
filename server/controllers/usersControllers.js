@@ -1,50 +1,39 @@
 import userModel from "../models/usersModel.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
+import {CustomError} from "../utils/customError.js";
 
-// controller to get users profile
-export const getUserProfile = async (req, res) => {
-  try {
-    const { id } = req.user;
-    const usersData = await userModel.findById(id).populate("addresses");
+export const getUserProfile = asyncHandler(async (req, res) => {
+  const userId = req.user.sub || req.user.id;
+  const usersData = await userModel.findById(userId).populate("addresses");
 
-    res.status(200).json({
-      message: "User profile fetched successfully",
-      user: usersData,
-    });
-  } catch (error) {
-    console.error("Error While fetching the users data : ", error);
-    res.status(500).json({ message: error.message || "Something went wrong" });
-  }
-};
+  if (!usersData) throw new CustomError("User not found", 404);
 
-// ----------------- UPDATE USER DETAILS -----------------
-export const updateUsersDetails = async (req, res) => {
-  try {
-    const { id } = req.user;
-    const { name, email, mobile } = req.body;
+  res.status(200).json({
+    message: "User profile fetched successfully",
+    user: usersData,
+  });
+});
 
-    const updatedUser = await userModel
-      .findByIdAndUpdate(
-        id,
-        {
-          ...(name && { name }),
-          ...(email && { email }),
-          ...(mobile && { mobile }),
-        },
-        { new: true }
-      )
-      .populate("addresses");
+export const updateUsersDetails = asyncHandler(async (req, res) => {
+  const userId = req.user.sub || req.user.id;
+  const { name, email, mobile } = req.body;
 
-    // 🔹 Cache invalidate/update
-    const cacheKey = `user:${id}`;
-    await deleteCache(cacheKey);
-    await setCache(cacheKey, updatedUser, 3600);
+  const updatedUser = await userModel
+    .findByIdAndUpdate(
+      userId,
+      {
+        ...(name && { name }),
+        ...(email && { email }),
+        ...(mobile && { mobile }),
+      },
+      { new: true, runValidators: true },
+    )
+    .populate("addresses");
 
-    res.status(200).json({
-      message: "User details updated successfully",
-      user: updatedUser,
-    });
-  } catch (error) {
-    console.error("Error updating user:", error);
-    res.status(500).json({ message: error.message });
-  }
-};
+  if (!updatedUser) throw new CustomError("User not found", 404);
+
+  res.status(200).json({
+    message: "User details updated successfully",
+    user: updatedUser,
+  });
+});
