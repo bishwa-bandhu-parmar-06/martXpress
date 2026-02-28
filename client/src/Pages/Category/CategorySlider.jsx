@@ -1,3 +1,5 @@
+import { useDispatch } from "react-redux";
+
 import React, { useState, useEffect, useCallback } from "react";
 import {
   ChevronLeft,
@@ -7,16 +9,23 @@ import {
   Loader,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import { getCategoryTopFeaturedProducts } from "@/API/ProductsApi/productsAPI"; // Adjust path
+import { addProductToCart } from "../../API/Cart/getAllCartProductApi.js"; // Adjust path
+import { setCartQuantity } from "../../Features/Cart/CartSlice.js";
+
 
 const CategorySlider = ({ categoryName }) => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [slides, setSlides] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [addingToCart, setAddingToCart] = useState({});
 
   // Get category-specific gradient
   const getCategoryGradient = (category) => {
@@ -43,7 +52,6 @@ const CategorySlider = ({ categoryName }) => {
       setError(null);
 
       const response = await getCategoryTopFeaturedProducts(categoryName);
-      // console.log(response);
       if (response.success) {
         const products = response.data || [];
 
@@ -108,6 +116,7 @@ const CategorySlider = ({ categoryName }) => {
             textColor: "text-white",
             isFeatured: product.featured === true,
             hasHighRating: (product.averageRating || 0) >= 4,
+            stock: product.stock !== undefined ? product.stock : 10, // Assuming in stock if undefined
           };
         });
 
@@ -172,10 +181,27 @@ const CategorySlider = ({ categoryName }) => {
     navigate(link);
   };
 
-  const handleAddToCart = (productId, e) => {
-    e.stopPropagation();
-    // Add to cart logic
-    console.log("Added to cart:", productId);
+  const handleAddToCart = async (productId, productName, e) => {
+    e.stopPropagation(); // Prevent navigating to the product page when clicking the button
+
+    try {
+      setAddingToCart((prev) => ({ ...prev, [productId]: true }));
+      const response = await addProductToCart({
+        productId,
+        quantity: 1,
+      });
+
+      if (response?.success) {
+        toast.success(`${productName} added to cart!`);
+        dispatch(setCartQuantity(response.cart.totalQuantity));
+      } else {
+        toast.success("Added to cart successfully!");
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to add to cart");
+    } finally {
+      setAddingToCart((prev) => ({ ...prev, [productId]: false }));
+    }
   };
 
   // Calculate progress bar width
@@ -185,7 +211,7 @@ const CategorySlider = ({ categoryName }) => {
   // Don't show slider if loading or error or no slides
   if (loading) {
     return (
-      <div className="w-full h-125 md:h-150 flex items-center justify-center bg-gray-100 dark:bg-gray-900 rounded-2xl mb-8">
+      <div className="w-full h-87.5 sm:h-100 md:h-125 flex items-center justify-center bg-gray-100 dark:bg-gray-900 rounded-2xl mb-8">
         <div className="text-center">
           <Loader className="animate-spin h-12 w-12 text-primary mx-auto mb-4" />
           <p className="text-gray-600 dark:text-gray-400">
@@ -198,10 +224,10 @@ const CategorySlider = ({ categoryName }) => {
 
   if (error) {
     return (
-      <div className="w-full h-125 md:h-150 flex items-center justify-center bg-gray-100 dark:bg-gray-900 rounded-2xl mb-8">
-        <div className="text-center">
+      <div className="w-full h-87.5 sm:h-100 md:h-125 flex items-center justify-center bg-gray-100 dark:bg-gray-900 rounded-2xl mb-8">
+        <div className="text-center px-4">
           <div className="text-6xl mb-4">😔</div>
-          <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+          <h3 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-2">
             Unable to Load Featured Products
           </h3>
           <p className="text-gray-600 dark:text-gray-400 mb-6">{error}</p>
@@ -215,20 +241,26 @@ const CategorySlider = ({ categoryName }) => {
   }
 
   return (
-    <div className="relative w-full h-125 md:h-150 overflow-hidden rounded-2xl shadow-2xl mb-8">
+    <div
+      className="relative w-full h-100 sm:h-112.5 md:h-125 lg:h-150 overflow-hidden rounded-2xl shadow-2xl mb-8"
+      onMouseEnter={() => setIsAutoPlaying(false)}
+      onMouseLeave={() => setIsAutoPlaying(true)}
+    >
       {/* Category Header Overlay */}
-      <div className="absolute top-4 left-4 z-20">
-        <div className="flex items-center gap-3">
+      <div className="absolute top-4 left-4 z-20 pointer-events-none">
+        <div className="flex items-center gap-2 sm:gap-3">
           <div
-            className={`w-12 h-12 rounded-full bg-linear-to-r ${getCategoryGradient(categoryName)} flex items-center justify-center text-white`}
+            className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-linear-to-r ${getCategoryGradient(categoryName)} flex items-center justify-center text-white shadow-md`}
           >
-            <ShoppingBag size={24} />
+            <ShoppingBag size={20} className="sm:w-6 sm:h-6" />
           </div>
           <div>
-            <h2 className="text-xl md:text-2xl font-bold text-white drop-shadow-lg">
+            <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-white drop-shadow-md line-clamp-1">
               {categoryName} Collection
             </h2>
-            <p className="text-white/90 text-sm">Featured Products</p>
+            <p className="text-white/90 text-xs sm:text-sm drop-shadow-sm">
+              Featured Products
+            </p>
           </div>
         </div>
       </div>
@@ -266,6 +298,8 @@ const CategorySlider = ({ categoryName }) => {
             zIndex = 1;
           }
 
+          const isAdding = addingToCart[slide.id];
+
           return (
             <div
               key={slide.id}
@@ -278,11 +312,11 @@ const CategorySlider = ({ categoryName }) => {
               onClick={() => handleSlideClick(slide.buttonLink)}
             >
               {/* Background Image with Overlay */}
-              <div className="absolute inset-0">
+              <div className="absolute inset-0 bg-black">
                 <img
                   src={slide.image}
                   alt={slide.title}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover opacity-80"
                   onError={(e) => {
                     e.target.src = "/placeholder.jpg";
                   }}
@@ -290,100 +324,128 @@ const CategorySlider = ({ categoryName }) => {
                 <div
                   className={`absolute inset-0 bg-linear-to-r ${slide.backgroundColor}`}
                 />
-                <div className="absolute inset-0 bg-linear-to-r from-black/60 via-black/40 to-transparent" />
+                <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/50 to-transparent sm:bg-linear-to-r sm:from-black/80 sm:via-black/50 sm:to-transparent" />
               </div>
 
-              {/* Featured & Rating Badges */}
-              <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
+              {/* Featured & Rating Badges (Hidden on very small screens to save space) */}
+              <div className="hidden sm:flex absolute top-4 right-4 z-10 flex-col gap-2 items-end">
                 {slide.isFeatured && (
-                  <div className="px-3 py-1 bg-yellow-500/90 backdrop-blur-sm text-white text-xs font-bold rounded-full">
+                  <div className="px-3 py-1 bg-yellow-500/90 backdrop-blur-sm text-white text-[10px] sm:text-xs font-bold rounded-full shadow-sm">
                     ⭐ FEATURED
                   </div>
                 )}
                 {slide.hasHighRating && slide.rating >= 4 && (
-                  <div className="px-3 py-1 bg-green-500/90 backdrop-blur-sm text-white text-xs font-bold rounded-full">
+                  <div className="px-3 py-1 bg-green-500/90 backdrop-blur-sm text-white text-[10px] sm:text-xs font-bold rounded-full shadow-sm">
                     ★ {slide.rating.toFixed(1)} RATING
                   </div>
                 )}
               </div>
 
               {/* Slide Content */}
-              <div className="relative h-full flex items-center">
-                <div className="container mx-auto px-8 md:px-12 lg:px-16">
-                  <div className="max-w-lg md:max-w-xl">
+              <div className="relative h-full flex items-end sm:items-center pb-16 sm:pb-0">
+                <div className="container mx-auto px-6 sm:px-12 lg:px-16 w-full">
+                  <div className="max-w-full sm:max-w-lg md:max-w-xl">
+                    {/* Mobile Badges (Shown only on small screens) */}
+                    <div className="flex sm:hidden gap-2 mb-3 flex-wrap">
+                      {slide.isFeatured && (
+                        <span className="px-2 py-0.5 bg-yellow-500/90 text-white text-[10px] font-bold rounded-sm">
+                          FEATURED
+                        </span>
+                      )}
+                      {slide.discount > 0 && (
+                        <span className="px-2 py-0.5 bg-red-500 text-white text-[10px] font-bold rounded-sm">
+                          -{slide.discount}%
+                        </span>
+                      )}
+                    </div>
+
                     {/* Product Badge */}
-                    <div className="inline-flex items-center gap-2 mb-3">
-                      <span className="px-3 py-1 bg-white/20 backdrop-blur-sm text-white rounded-full text-xs font-semibold">
+                    <div className="hidden sm:inline-flex items-center gap-2 mb-3">
+                      <span className="px-3 py-1 bg-white/20 backdrop-blur-sm text-white rounded-full text-xs font-semibold border border-white/10">
                         {slide.subtitle}
                       </span>
                       {slide.discount > 0 && (
-                        <span className="px-3 py-1 bg-red-500 text-white rounded-full text-xs font-bold">
+                        <span className="px-3 py-1 bg-red-500 text-white rounded-full text-xs font-bold shadow-sm">
                           -{slide.discount}% OFF
                         </span>
                       )}
                     </div>
 
                     {/* Product Title */}
-                    <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-2">
+                    <h1 className="text-2xl sm:text-3xl lg:text-5xl font-bold text-white mb-2 leading-tight drop-shadow-md line-clamp-2">
                       {slide.title}
                     </h1>
 
                     {/* Product Description */}
-                    <p className="text-white/90 text-sm md:text-base mb-4 max-w-md">
+                    <p className="text-gray-200 text-xs sm:text-sm md:text-base mb-4 max-w-md line-clamp-2 sm:line-clamp-3 drop-shadow-sm">
                       {slide.description}
                     </p>
 
                     {/* Rating */}
-                    <div className="flex items-center gap-2 mb-4">
+                    <div className="flex items-center gap-2 mb-4 sm:mb-6">
                       <div className="flex">
                         {[1, 2, 3, 4, 5].map((star) => (
                           <Star
                             key={star}
-                            size={16}
-                            className={`${
+                            size={14}
+                            className={`sm:w-4 sm:h-4 ${
                               star <= Math.floor(slide.rating)
                                 ? "text-yellow-400 fill-yellow-400"
-                                : "text-gray-300"
+                                : "text-gray-400/50"
                             }`}
                           />
                         ))}
                       </div>
-                      <span className="text-white/80 text-sm">
-                        {slide.rating.toFixed(1)} ({slide.reviews} reviews)
+                      <span className="text-white/80 text-xs sm:text-sm font-medium">
+                        {slide.rating.toFixed(1)}{" "}
+                        <span className="hidden sm:inline">
+                          ({slide.reviews} reviews)
+                        </span>
                       </span>
                     </div>
 
                     {/* Price and CTA */}
-                    <div className="flex items-center gap-6">
-                      <div>
-                        <div className="text-3xl md:text-4xl font-bold text-white">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
+                      <div className="flex items-end sm:flex-col sm:items-start gap-3 sm:gap-0">
+                        <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-white drop-shadow-md">
                           ₹{slide.price.toLocaleString()}
                         </div>
                         {slide.originalPrice && (
-                          <div className="text-white/60 line-through">
+                          <div className="text-gray-300 line-through text-sm font-medium">
                             ₹{slide.originalPrice.toLocaleString()}
                           </div>
                         )}
                       </div>
 
-                      <div className="flex gap-3">
+                      <div className="flex gap-2 sm:gap-3 w-full sm:w-auto">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             handleSlideClick(slide.buttonLink);
                           }}
-                          className=" cursor-pointer px-6 py-3 bg-white text-gray-900 font-semibold rounded-lg hover:bg-gray-100 
-                            transition-all duration-300 hover:shadow-lg"
+                          className="flex-1 sm:flex-none cursor-pointer px-4 sm:px-6 py-2.5 sm:py-3 bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 text-white text-sm sm:text-base font-semibold rounded-lg transition-all duration-300 flex justify-center items-center"
                         >
-                          View Details
+                          Details
                         </button>
                         <button
-                          onClick={(e) => handleAddToCart(slide.id, e)}
-                          className="cursor-pointer px-6 py-3 bg-primary hover:bg-primary/90 text-white font-semibold rounded-lg 
-                            transition-all duration-300 hover:shadow-lg flex items-center gap-2"
+                          onClick={(e) =>
+                            handleAddToCart(slide.id, slide.title, e)
+                          }
+                          disabled={slide.stock <= 0 || isAdding}
+                          className="flex-2 sm:flex-none cursor-pointer px-4 sm:px-6 py-2.5 sm:py-3 bg-primary hover:bg-primary/90 text-white text-sm sm:text-base font-semibold rounded-lg transition-all duration-300 shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          <ShoppingBag size={18} />
-                          Add to Cart
+                          {isAdding ? (
+                            <Loader size={18} className="animate-spin" />
+                          ) : (
+                            <ShoppingBag size={18} />
+                          )}
+                          <span className="whitespace-nowrap">
+                            {slide.stock <= 0
+                              ? "Out of Stock"
+                              : isAdding
+                                ? "Adding..."
+                                : "Add to Cart"}
+                          </span>
                         </button>
                       </div>
                     </div>
@@ -395,61 +457,67 @@ const CategorySlider = ({ categoryName }) => {
         })}
       </div>
 
-      {/* Navigation Buttons (only show if multiple slides) */}
+      {/* Navigation Buttons (Desktop only) */}
       {slides.length > 1 && (
         <>
           <button
-            onClick={handlePrevSlide}
+            onClick={(e) => {
+              e.stopPropagation();
+              handlePrevSlide();
+            }}
             disabled={isTransitioning}
-            className={`absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full 
-              bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 
-              transition-all duration-300 shadow-lg z-30 ${
+            className={`hidden sm:flex absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full 
+              bg-black/20 backdrop-blur-md text-white border border-white/10 hover:bg-black/40 
+              transition-all duration-300 shadow-xl z-30 cursor-pointer ${
                 isTransitioning ? "opacity-50 cursor-not-allowed" : ""
               }`}
             aria-label="Previous slide"
           >
-            <ChevronLeft className="w-6 h-6" />
+            <ChevronLeft className="w-5 h-5 md:w-6 md:h-6" />
           </button>
 
           <button
-            onClick={handleNextSlide}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleNextSlide();
+            }}
             disabled={isTransitioning}
-            className={`absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full 
-              bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 
-              transition-all duration-300 shadow-lg z-30 ${
+            className={`hidden sm:flex absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full 
+              bg-black/20 backdrop-blur-md text-white border border-white/10 hover:bg-black/40 
+              transition-all duration-300 shadow-xl z-30 cursor-pointer ${
                 isTransitioning ? "opacity-50 cursor-not-allowed" : ""
               }`}
             aria-label="Next slide"
           >
-            <ChevronRight className="w-6 h-6" />
+            <ChevronRight className="w-5 h-5 md:w-6 md:h-6" />
           </button>
         </>
       )}
 
-      {/* Slide Indicators (only show if multiple slides) */}
+      {/* Slide Indicators */}
       {slides.length > 1 && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-30">
+        <div className="absolute bottom-5 sm:bottom-6 left-1/2 -translate-x-1/2 flex gap-1.5 sm:gap-2 z-30">
           {slides.map((_, index) => (
             <button
               key={index}
-              onClick={() => goToSlide(index)}
+              onClick={(e) => {
+                e.stopPropagation();
+                goToSlide(index);
+              }}
               disabled={isTransitioning}
-              className={`group focus:outline-none ${
+              className={`group focus:outline-none cursor-pointer p-1 ${
                 isTransitioning ? "cursor-not-allowed" : ""
               }`}
               aria-label={`Go to slide ${index + 1}`}
             >
-              <div className="relative">
+              <div className="relative flex items-center justify-center">
                 <div
-                  className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                  className={`rounded-full transition-all duration-300 ${
                     index === currentSlide
-                      ? "bg-white scale-125"
-                      : "bg-white/50 hover:bg-white/80"
+                      ? "w-4 h-2 sm:w-6 sm:h-2 bg-white"
+                      : "w-1.5 h-1.5 sm:w-2 sm:h-2 bg-white/50 hover:bg-white/80"
                   } ${isTransitioning ? "opacity-50" : ""}`}
                 />
-                {index === currentSlide && (
-                  <div className="absolute inset-0 animate-ping rounded-full bg-white/30" />
-                )}
               </div>
             </button>
           ))}
@@ -457,9 +525,9 @@ const CategorySlider = ({ categoryName }) => {
       )}
 
       {/* Progress Bar */}
-      <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20 z-30">
+      <div className="absolute bottom-0 left-0 right-0 h-1 sm:h-1.5 bg-black/20 z-30">
         <div
-          className="h-full bg-linear-to-r from-primary to-secondary transition-all duration-4000 ease-linear"
+          className="h-full bg-primary transition-all duration-4000 ease-linear"
           style={{
             width:
               isAutoPlaying && slides.length > 1 ? `${progressWidth}%` : "0%",
@@ -468,7 +536,7 @@ const CategorySlider = ({ categoryName }) => {
       </div>
 
       {/* Slide Counter */}
-      <div className="absolute bottom-4 right-4 bg-black/30 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-medium z-30">
+      <div className="absolute top-4 right-4 sm:top-auto sm:bottom-6 sm:right-6 bg-black/40 backdrop-blur-md text-white px-3 py-1 sm:px-4 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium z-30 border border-white/10 shadow-sm">
         <span className="tabular-nums">
           {String(currentSlide + 1).padStart(2, "0")} /{" "}
           {String(slides.length).padStart(2, "0")}

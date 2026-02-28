@@ -8,6 +8,7 @@ import {
   login,
   registerAdmin,
   registerSeller,
+  logout,
 } from "../controllers/authControllers.js";
 import { upload } from "../uploads/multer.js";
 import { validate } from "../middleware/validate_middleware.js";
@@ -51,5 +52,5 @@ routes.post(
 
 // all type of users role can login here
 routes.post("/login", validate(loginSchema), login);
-
+routes.post("/logout", logout);
 export default routes;

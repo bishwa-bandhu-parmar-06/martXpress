@@ -12,10 +12,21 @@ const BecomeASeller = () => {
   return (
     <Link
       to="/sellers/auth"
-      className="flex items-center gap-2 px-4 py-2 rounded-lg dark:hover:bg-gray-800 hover:bg-gray-200 hover:text-text cursor-pointer transition"
+      // Standardized container: Matches Cart, Wishlist, and Users exactly
+      className="flex items-center gap-2 px-4 py-2 rounded-lg dark:hover:bg-gray-800 hover:bg-gray-200 transition-all duration-300 group cursor-pointer"
     >
-      <Store size={20} className="text-primary" />
-      <span className="font-medium dark:text-white">Become a Seller</span>
+      <div className="relative">
+        <Store 
+          size={20} 
+          // Changed to match the gray-to-color transition of other icons
+          className="text-gray-700 dark:text-gray-300 group-hover:text-primary transition-colors" 
+        />
+      </div>
+
+      {/* Standardized Text: Matches the weight and color of other labels */}
+      <span className="font-medium text-gray-800 dark:text-gray-200 hidden md:block">
+        Become a Seller
+      </span>
     </Link>
   );
 };

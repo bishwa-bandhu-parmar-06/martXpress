@@ -9,6 +9,15 @@ export const login = async (payload) => {
   }
 };
 
+export const logoutUser = async () => {
+  try {
+    const response = await api.post("/auth/logout", {});
+    return response.data;
+  } catch (error) {
+    throw error.response ? error.response.data : new Error("Logout Failed");
+  }
+};
+
 export const verifyOtp = async (payload) => {
   try {
     const response = await api.post("/auth/verify-otp", payload);

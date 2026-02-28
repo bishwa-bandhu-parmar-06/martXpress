@@ -3,6 +3,9 @@ import { User, LogOut, LayoutDashboard, ShoppingBag } from "lucide-react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { logout } from "../../../Features/auth/AuthSlice";
+import { clearCartQuantity } from "../../../Features/Cart/CartSlice";
+import { setWishlist } from "../../../Features/Cart/WishlistSlice";
+import { logoutUser } from "@/API/Common/commonApi";
 
 const Users = () => {
   const navigate = useNavigate();
@@ -23,14 +26,21 @@ const Users = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  
-  const handleLogout = () => {
-    dispatch(logout());
-    setIsOpen(false);
-    navigate("/");
+  const handleLogout = async () => {
+    try {
+      await logoutUser();
+      dispatch(logout());
+      dispatch(clearCartQuantity());
+      dispatch(setWishlist([]));
+      setIsOpen(false);
+      navigate("/");
+    } catch (error) {
+      console.error("Error during logout:", error);
+      dispatch(logout());
+      navigate("/");
+    }
   };
 
-  // Dynamic Dashboard Path based on Redux Role
   const getDashboardPath = () => {
     if (user?.role === "admin") return "/admin/dashboard";
     if (user?.role === "seller") return "/sellers/dashboard";
@@ -43,15 +53,8 @@ const Users = () => {
       icon: <LayoutDashboard size={16} />,
       path: getDashboardPath(),
     },
-    // Only show My Orders for regular users
     ...(user?.role === "user"
-      ? [
-          {
-            label: "My Orders",
-            icon: <ShoppingBag size={16} />,
-            path: "/users/orders",
-          },
-        ]
+      ? [{ label: "My Orders", icon: <ShoppingBag size={16} />, path: "/users/orders" }]
       : []),
   ];
 
@@ -60,42 +63,48 @@ const Users = () => {
     : null;
 
   return (
-  
     <div className="relative inline-block text-left" ref={dropdownRef}>
       
-      {/* 1. Conditional Trigger: Link if logged out, Button if logged in */}
       {!isAuthenticated ? (
+        // --- LOGGED OUT STATE (LOGIN LINK) ---
         <Link
           to="/users/auth"
-          className="group flex items-center gap-1 cursor-pointer p-1 rounded-full transition-all duration-300"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg dark:hover:bg-gray-800 hover:bg-gray-200 transition-all duration-300 group cursor-pointer"
         >
-          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary border border-primary/20 shadow-sm group-hover:bg-primary group-hover:text-white transition-all duration-300">
-            <User size={20} />
+          <div className="relative">
+            <User 
+              size={20} 
+              className="text-gray-700 dark:text-gray-300 group-hover:text-primary transition-colors" 
+            />
           </div>
-          <span className="text-sm font-bold ml-1 dark:text-gray-200 hidden sm:block">
+          <span className="font-medium text-gray-800 dark:text-gray-200 hidden md:block">
             Login
           </span>
         </Link>
       ) : (
+        // --- LOGGED IN STATE (AVATAR BUTTON) ---
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="group flex items-center gap-1 cursor-pointer p-1 rounded-full transition-all duration-300 border-none bg-transparent outline-none"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg dark:hover:bg-gray-800 hover:bg-gray-200 transition-all duration-300 group cursor-pointer border-none bg-transparent outline-none"
         >
-          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary border border-primary/20 shadow-sm group-hover:bg-primary group-hover:text-white transition-all duration-300">
-            <span className="font-bold text-base uppercase">{displayChar}</span>
+          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary border border-primary/20 shadow-sm group-hover:bg-primary group-hover:text-white transition-all duration-300">
+            <span className="font-bold text-sm uppercase">{displayChar}</span>
           </div>
+          <span className="font-medium text-gray-800 dark:text-gray-200 hidden md:block">
+            Account
+          </span>
         </button>
       )}
 
-      {/* 2. Dropdown Menu */}
+      {/* Dropdown Menu */}
       {isAuthenticated && isOpen && (
-        <div className="absolute right-0 mt-3 w-56 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-2xl py-2 z-100 animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="absolute right-0 mt-3 w-56 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-2xl py-2 z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="px-4 py-3 border-b border-gray-50 dark:border-gray-800 mb-2">
             <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-primary/10 text-primary mb-1 inline-block">
               {user?.role}
             </span>
             <p className="text-sm font-bold text-gray-700 dark:text-gray-200 truncate">
-              {user?.name || "Name Not Provided"}
+              {user?.name || "User"}
             </p>
             <p className="text-[11px] text-gray-500 truncate">{user?.email}</p>
           </div>
@@ -108,7 +117,7 @@ const Users = () => {
                   navigate(item.path);
                   setIsOpen(false);
                 }}
-                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-primary/5 hover:text-primary cursor-pointer transition-colors"
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-primary/5 hover:text-primary transition-colors"
               >
                 <span className="p-1.5 rounded-lg bg-gray-50 dark:bg-gray-800">
                   {item.icon}
@@ -121,7 +130,7 @@ const Users = () => {
           <div className="border-t border-gray-50 dark:border-gray-800 mt-2 pt-2">
             <button
               onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 cursor-pointer transition-colors"
+              className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors"
             >
               <LogOut size={16} />
               Logout
@@ -131,7 +140,6 @@ const Users = () => {
       )}
     </div>
   );
- 
 };
 
 export default Users;

@@ -5,28 +5,53 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>martXpress</title>
+
+    <style>
+      /* 1. Hide the Google Translate Top Bar */
+      .goog-te-banner-frame.skiptranslate, 
+      .goog-te-gadget-icon,
+      .goog-te-gadget-simple img,
+      .goog-te-menu-value span {
+        display: none !important;
+      }
+
+      /* 2. Fix the body shift caused by Google Translate */
+      body {
+        top: 0px !important;
+        position: static !important;
+      }
+
+      /* 3. Hide the actual widget element so it doesn't take space */
+      #google_translate_element {
+        display: none !important;
+      }
+
+      /* 4. Hide the "Original Text" tooltip on hover */
+      .goog-te-balloon-frame, #goog-gt-tt {
+        display: none !important;
+        visibility: hidden !important;
+      }
+    </style>
   </head>
   <body>
     <div id="google_translate_element"></div>
+    
     <div id="root"></div>
+
     <script type="module" src="/src/main.jsx"></script>
+
     <script type="text/javascript">
-  function googleTranslateElementInit() {
-    new google.translate.TranslateElement(
-      {
-        pageLanguage: 'en',
-        includedLanguages: 'en,hi,fr,es,de',
-        layout: google.translate.TranslateElement.InlineLayout.SIMPLE
-      },
-      'google_translate_element'
-    );
-  }
-</script>
-
-<script
-  type="text/javascript"
-  src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit">
-</script>
-
+      function googleTranslateElementInit() {
+        new google.translate.TranslateElement({
+          pageLanguage: 'en',
+          includedLanguages: 'en,hi,fr,es,de',
+          autoDisplay: false
+        }, 'google_translate_element');
+      }
+    </script>
+    <script 
+      type="text/javascript" 
+      src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"
+    ></script>
   </body>
 </html>

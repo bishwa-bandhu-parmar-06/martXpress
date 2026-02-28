@@ -12,7 +12,6 @@ const TopBrands = () => {
     const fetchBrands = async () => {
       try {
         const res = await getAllBrands();
-        console.log("Response : ", res);
         if (res.status === 200) {
           setBrands(res.brands);
         }
@@ -25,10 +24,8 @@ const TopBrands = () => {
 
     fetchBrands();
   }, []);
-// YAHI ADD KARNA THA
   const duplicatedBrands = [...brands, ...brands, ...brands];
 
-  // Function to handle View All button click
   const handleViewAllClick = () => {
     navigate("/brands");
   };
@@ -47,7 +44,6 @@ const TopBrands = () => {
       dark:from-gray-900 dark:to-gray-800 border border-gray-200 dark:border-gray-700 
       mb-6 overflow-hidden group"
     >
-      {/* Header with elegant design */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
         <div className="mb-4 md:mb-0">
           <div className="flex items-center gap-3 mb-2">

@@ -1,21 +1,28 @@
-import api from "../axiosInstance.js";
+import api from "../axiosInstance";
 
 export const addProductToCart = async (payload) => {
-  const response = await api.post("/api/cart/add-to-cart", payload);
-  return response.data;
+  const { data } = await api.post("/cart/add-to-cart", payload);
+  return data;
 };
 
-export const getAllCartProducts = async (usersId) => {
-  const response = await api.post("/api/cart/get-all-cart-item", usersId);
-  return response.data;
+export const getCart = async () => {
+  const { data } = await api.get("/cart/get-all-cart-item");
+  return data;
 };
 
-export const removeCartProducts = async (usersId) => {
-  const response = await api.post(`/api/cart/remove/${productId}`, usersId);
-  return response.data;
+export const updateCartItemQuantity = async (productId, quantity) => {
+  const { data } = await api.post(`/cart/update/${productId}`, {
+    quantity,
+  });
+  return data;
 };
 
-export const removeAllCartProducts = async (usersId) => {
-  const response = await api.post(`/api/cart/clear/all`, usersId);
-  return response.data;
+export const removeCartItem = async (productId) => {
+  const { data } = await api.post(`/cart/remove/${productId}`);
+  return data;
+};
+
+export const clearCart = async () => {
+  const { data } = await api.post("/cart/clear");
+  return data;
 };

@@ -14,19 +14,19 @@ import ProductDetailsPage from "./Pages/ProductDetailsPage";
 import NotFoundPage from "./Components/Common/NotFoundPage";
 import BrandsPage from "./Pages/Brands/BrandsPage";
 import BrandPage from "./Pages/Brands/BrandPage";
-
 import CategoriesPage from "./Pages/Category/CategoriesPage";
 import CategoryPage from "./Pages/Category/CategoryPage";
 import SellersDashboard from "./Pages/Sellers/SellersDashboard";
-
-import { ToastContainer, toast } from "react-toastify";
+import { Toaster } from "./components/ui/sonner";
 import UsersAuth from "./Pages/Users/UsersAuth";
 import UsersDashBoard from "./Pages/Users/UsersDashBoard";
 import AdminDashBoard from "./Pages/Admin/AdminDashBoard";
 import AdminAuth from "./Pages/Admin/AdminAuth";
 import ProtectedRoute from "./Components/Common/ProtectedRoute";
-
 import ScrollToTop from "./Components/Common/ScrollToTop";
+import WishlistPage from "./Pages/WishlistPage";
+import AuthDataLoader from "./Features/Cart/AuthDataLoader";
+
 const App = () => {
   const isLoading = useInitialLoader();
 
@@ -36,15 +36,17 @@ const App = () => {
 
   return (
     <>
+      <Toaster position="top-right" richColors closeButton />
       <Router>
+        <AuthDataLoader />
         <ScrollToTop />
         <Theme />
-        <ToastContainer />
         <TopNavbar />
         <BottomNavbar />
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/cart" element={<CartPage />} />
+          <Route path="/wishlist" element={<WishlistPage />} />
           <Route path="/help" element={<HelpPage />} />
           <Route path="/product/:productId" element={<ProductDetailsPage />} />
 

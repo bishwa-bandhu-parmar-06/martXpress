@@ -51,6 +51,7 @@ const Home = () => {
         <div className="py-4 sm:py-6 lg:py-8 mt-2 sm:mt-4">
           <TopBrands />
         </div>
+        
 
         {/* 3. DYNAMIC Category Sections */}
         {/* Responsive gap between categories: smaller on mobile, larger on desktop */}
