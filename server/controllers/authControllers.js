@@ -7,6 +7,10 @@ import { hashPassword } from "../Helper/hashPassword.js";
 import { CustomError } from "../utils/customError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { checkEmailExists } from "../Helper/checkEmailExists.js";
+import { OAuth2Client } from "google-auth-library";
+
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
 // ------------------------------ LOGIN FUNCTION FOR ALL  --------------------------------
 export const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
@@ -69,6 +73,66 @@ export const login = asyncHandler(async (req, res) => {
       name: user.name || "",
     },
     role,
+  });
+});
+
+export const googleAuth = asyncHandler(async (req, res) => {
+  const { token } = req.body;
+
+  if (!token) {
+    throw new CustomError("Google token missing", 400);
+  }
+
+  // verify google token
+  const ticket = await client.verifyIdToken({
+    idToken: token,
+    audience: process.env.GOOGLE_CLIENT_ID,
+  });
+
+  const payload = ticket.getPayload();
+
+  const { sub, email, name, email_verified, picture } = payload;
+
+  if (!email_verified) {
+    throw new CustomError("Google email not verified", 400);
+  }
+
+  // check if user exists
+  let user = await userModel.findOne({ email });
+
+  if (!user) {
+    // create new user
+    user = await userModel.create({
+      name,
+      email,
+      googleId: sub,
+      authProvider: "google",
+      isEmailVerified: true,
+    });
+  }
+
+  // generate YOUR existing JWT
+  const jwtToken = generateToken({
+    id: user._id,
+    role: "user",
+  });
+
+  // set cookie same as your login function
+  res.cookie("token", jwtToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "None" : "Strict",
+    maxAge: 24 * 60 * 60 * 1000,
+  });
+
+  res.status(200).json({
+    success: true,
+    message: "Google login successful",
+    user: {
+      email: user.email,
+      name: user.name || "",
+    },
+    role: "user",
   });
 });
 

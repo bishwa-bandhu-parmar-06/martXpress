@@ -18,6 +18,11 @@ export const logoutUser = async () => {
   }
 };
 
+export const googleLogin = async (credential) => {
+  const response = await api.post("/auth/google", { token: credential });
+  return response.data;
+};
+
 export const verifyOtp = async (payload) => {
   try {
     const response = await api.post("/auth/verify-otp", payload);

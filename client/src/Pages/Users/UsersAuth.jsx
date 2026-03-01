@@ -2,6 +2,9 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import LoginForm from "../../Components/Common/Auth/Common/LoginForm";
 import UserRegistration from "../../Components/Common/Auth/UsersAuth/UserRegistration";
+
+import { googleLogin } from "../../API/Common/commonApi.js";
+
 import {
   ShoppingBag,
   Truck,
@@ -15,10 +18,14 @@ import {
   UserPlus,
   CheckCircle2,
 } from "lucide-react";
+import { GoogleLogin } from "@react-oauth/google";
+import { useDispatch } from "react-redux";
+import { loginSuccess } from "../../Features/auth/AuthSlice";
 
 const UsersAuth = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("login"); // "login" or "register"
+  const dispatch = useDispatch();
+  const [activeTab, setActiveTab] = useState("login");
   const [dark, setDark] = useState(() => {
     const savedTheme = localStorage.getItem("theme");
     return savedTheme
@@ -42,6 +49,34 @@ const UsersAuth = () => {
     { label: "Delivery Cities", value: "500+", color: "text-blue-600" },
     { label: "Trust Score", value: "4.8★", color: "text-yellow-600" },
   ];
+
+  const handleGoogleSuccess = async (response) => {
+    try {
+      const data = await googleLogin(response.credential);
+
+      if (data.success) {
+        dispatch(
+          loginSuccess({
+            user: {
+              name: data.user.name,
+              email: data.user.email,
+              role: data.role,
+            },
+          }),
+        );
+
+        const dashboardPaths = {
+          user: "/users/dashboard",
+          admin: "/admin/dashboard",
+          seller: "/sellers/dashboard",
+        };
+
+        navigate(dashboardPaths[data.role] || "/");
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors duration-300 selection:bg-primary/30">
@@ -141,6 +176,26 @@ const UsersAuth = () => {
                       onSwitchToLogin={() => setActiveTab("login")}
                     />
                   )}
+                </div>
+
+                <div className="mt-6">
+                  <div className="flex items-center my-4">
+                    <div className="grow border-t border-gray-300 dark:border-gray-700"></div>
+                    <span className="mx-4 text-sm text-gray-500 dark:text-gray-400">
+                      OR
+                    </span>
+                    <div className="grow border-t border-gray-300 dark:border-gray-700"></div>
+                  </div>
+
+                  <div className="flex justify-center">
+                    <GoogleLogin
+                      onSuccess={handleGoogleSuccess}
+                      onError={() => setError("Google Login Failed")}
+                      theme="outline"
+                      size="large"
+                      width="300"
+                    />
+                  </div>
                 </div>
               </div>
 

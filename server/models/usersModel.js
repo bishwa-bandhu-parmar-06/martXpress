@@ -20,7 +20,14 @@ const userSchema = new mongoose.Schema(
     password: {
       type: String,
       select: false,
-      required: [true, "Please enter your email"],
+    },
+    googleId: {
+      type: String,
+    },
+    authProvider: {
+      type: String,
+      enum: ["local", "google"],
+      default: "local",
     },
     mobile: {
       type: String,
