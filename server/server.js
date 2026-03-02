@@ -135,7 +135,6 @@ app.use("/api/rating", ratingRoutes);
 app.use(express.static(path.join(__dirname, "client/dist")));
 
 // SPA fallback (VERY IMPORTANT)
-// SPA fallback (VERY IMPORTANT)
 app.get("/{*splat}", (req, res) => {
   res.sendFile(path.resolve(__dirname, "client", "dist", "index.html"));
 });

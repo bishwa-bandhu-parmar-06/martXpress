@@ -54,7 +54,13 @@ const Users = () => {
       path: getDashboardPath(),
     },
     ...(user?.role === "user"
-      ? [{ label: "My Orders", icon: <ShoppingBag size={16} />, path: "/users/orders" }]
+      ? [
+          {
+            label: "My Orders",
+            icon: <ShoppingBag size={16} />,
+            path: "/users/orders",
+          },
+        ]
       : []),
   ];
 
@@ -64,7 +70,6 @@ const Users = () => {
 
   return (
     <div className="relative inline-block text-left" ref={dropdownRef}>
-      
       {!isAuthenticated ? (
         // --- LOGGED OUT STATE (LOGIN LINK) ---
         <Link
@@ -72,9 +77,9 @@ const Users = () => {
           className="flex items-center gap-2 px-4 py-2 rounded-lg dark:hover:bg-gray-800 hover:bg-gray-200 transition-all duration-300 group cursor-pointer"
         >
           <div className="relative">
-            <User 
-              size={20} 
-              className="text-gray-700 dark:text-gray-300 group-hover:text-primary transition-colors" 
+            <User
+              size={20}
+              className="text-gray-700 dark:text-gray-300 group-hover:text-primary transition-colors"
             />
           </div>
           <span className="font-medium text-gray-800 dark:text-gray-200 hidden md:block">
@@ -98,7 +103,7 @@ const Users = () => {
 
       {/* Dropdown Menu */}
       {isAuthenticated && isOpen && (
-        <div className="absolute right-0 mt-3 w-56 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-2xl py-2 z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="absolute right-0 mt-3 w-56 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-2xl py-2 z-100 animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="px-4 py-3 border-b border-gray-50 dark:border-gray-800 mb-2">
             <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-primary/10 text-primary mb-1 inline-block">
               {user?.role}

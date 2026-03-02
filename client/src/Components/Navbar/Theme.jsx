@@ -48,9 +48,9 @@ const Theme = () => {
       {/* Right side – Theme Toggle */}
       <div
         onClick={() => setDark(!dark)}
-        className="flex items-center gap-2 sm:gap-3 cursor-pointer select-none group"
+        className="flex items-center gap-2 sm:gap-2.5 cursor-pointer select-none group hover:text-primary transition-colors"
       >
-        <div className="relative w-4 h-4">
+        <div className="relative w-4 h-4 flex items-center justify-center">
           <Sun
             size={16}
             className={`absolute transition-all duration-500
@@ -66,18 +66,6 @@ const Theme = () => {
         <span className="font-semibold hidden xs:block">
           {dark ? "Dark" : "Light"}
         </span>
-
-        {/* Simplified Toggle Switch for Mobile */}
-        <div
-          className={`w-8 h-4 sm:w-10 sm:h-5 rounded-full relative transition-colors duration-300
-            ${dark ? "bg-primary" : "bg-gray-400"}`}
-        >
-          <div
-            className={`h-3 w-3 sm:h-4 sm:w-4 rounded-full bg-white absolute top-0.5
-              transition-all duration-300 ease-in-out
-              ${dark ? "translate-x-4 sm:translate-x-5" : "translate-x-0.5"}`}
-          />
-        </div>
       </div>
     </div>
   );

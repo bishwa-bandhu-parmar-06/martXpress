@@ -2,10 +2,12 @@ import express from "express";
 import rateLimit from "express-rate-limit";
 import RedisStore from "rate-limit-redis";
 
-import { verifyToken , authorizeRoles} from "../middleware/authMiddleware.js";
+import { verifyToken, authorizeRoles } from "../middleware/authMiddleware.js";
 import redisClient from "../config/redisClient.js";
 
 import {
+  changeUserPassword,
+  deleteUserAccount,
   getUserProfile,
   updateUsersDetails,
 } from "../controllers/usersControllers.js";
@@ -60,14 +62,18 @@ routes.use(verifyToken, authorizeRoles("user"));
 // User profile
 routes.get("/user-profile", cacheMiddleware(5 * 60), getUserProfile);
 
-routes.post("/update-user-details",  updateUsersDetails);
+routes.post("/update-user-details", updateUsersDetails);
 
 // Address management
-routes.post("/add-user-address", cacheMiddleware(5 * 60),addAddress);
+routes.post("/add-user-address", cacheMiddleware(5 * 60), addAddress);
 
-routes.get("/all-user-address", cacheMiddleware(5 * 60),getAllAddresses);
+routes.get("/all-user-address", cacheMiddleware(5 * 60), getAllAddresses);
 
-routes.get("/single-address/:addressId", cacheMiddleware(5 * 60),getSingleAddress);
+routes.get(
+  "/single-address/:addressId",
+  cacheMiddleware(5 * 60),
+  getSingleAddress,
+);
 
 routes.post(
   "/update-user-address/:addressId",
@@ -80,5 +86,8 @@ routes.post(
   // addressWriteLimiter,
   deleteAddress,
 );
+
+routes.post("/change-password", changeUserPassword);
+routes.delete("/delete-account", deleteUserAccount);
 
 export default routes;
