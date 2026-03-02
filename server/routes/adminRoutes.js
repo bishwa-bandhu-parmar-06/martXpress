@@ -32,36 +32,37 @@ import { cacheMiddleware } from "../middleware/redisMiddleware.js";
 // Secure all routes for Admin only
 router.use(verifyToken, authorizeRoles("admin"));
 
-// Profile
-router.get("/profile",cacheMiddleware(5 * 60), getAdminProfile);
-router.post("/update", cacheMiddleware(5 * 60), updateAdminDetails);
+/* ------------------------------ Profile ------------------------------ */
+router.get("/profile", getAdminProfile);
+router.post("/update", updateAdminDetails);
 router.post("/change-password", changeAdminPassword);
 
-// Address
-router.post("/address/add", cacheMiddleware(5 * 60), addAddress);
-router.get("/address/all", cacheMiddleware(5 * 60), getAllAddresses);
-router.get("/address/:addressId",cacheMiddleware(5 * 60),  getSingleAddress);
-router.post("/address/:addressId", cacheMiddleware(5 * 60), updateAddress);
-router.post("/address/:addressId", deleteAddress);
+/* ------------------------------ Address ------------------------------ */
+router.post("/address/add", addAddress);
+router.get("/address/all", getAllAddresses);
+router.get("/address/:addressId", getSingleAddress);
+router.post("/address/update/:addressId", updateAddress);
+router.post("/address/remove/:addressId", deleteAddress);
 
-// Seller Management
-router.get("/sellers/approved", cacheMiddleware(5 * 60), getApprovedSellers);
-router.get("/sellers/rejected", cacheMiddleware(5 * 60), getRejectedSellers);
-router.get("/sellers/pending", cacheMiddleware(1 * 60), getPendingSellers);
+/* ------------------------- Seller Management ------------------------- */
+router.get("/sellers/approved", getApprovedSellers);
+router.get("/sellers/rejected", getRejectedSellers);
+router.get("/sellers/pending", getPendingSellers);
 router.get("/sellers/:sellerid", getSellerById);
 router.post("/sellers/:sellerid/approve", approveSeller);
 router.post("/sellers/:sellerid/reject", rejectSeller);
 router.post("/sellers/:sellerid/remove", deleteSeller);
 
-// User Management
-router.get("/get-all-users", cacheMiddleware(5 * 60), getAllUsers);
+/* -------------------------- User Management -------------------------- */
+router.get("/get-all-users", getAllUsers);
 router.post("/users/:usersid", deleteUser);
 
-// Product Management
+/* ------------------------ Product Management ------------------------- */
+// ONLY CACHE REMAINS HERE
 router.get("/get-all-products", cacheMiddleware(5 * 60), getAllProducts);
 router.post("/products/:productid", deleteProduct);
 
-// Dashboard
-router.get("/dashboard/stats", cacheMiddleware(60), getDashboardStats);
+/* -------------------------- Dashboard Stats -------------------------- */
+router.get("/dashboard/stats", getDashboardStats);
 
 export default router;

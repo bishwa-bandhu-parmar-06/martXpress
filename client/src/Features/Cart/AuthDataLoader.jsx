@@ -5,16 +5,16 @@ import { getAllWishlistProducts } from "../../API/Cart/wishListApi";
 import {
   setCartQuantity,
   clearCartQuantity,
-} from "../../Features/Cart/CartSlice"; // Added clearCartQuantity
+} from "../../Features/Cart/CartSlice";
 import { setWishlist } from "../../Features/Cart/WishlistSlice";
 
 const AuthDataLoader = () => {
   const dispatch = useDispatch();
-  const { isAuthenticated } = useSelector((state) => state.auth);
+  const { isAuthenticated, user } = useSelector((state) => state.auth);
 
   useEffect(() => {
     const loadData = async () => {
-      if (isAuthenticated) {
+      if (isAuthenticated && user?.role === "user") {
         try {
           const [cartRes, wishlistRes] = await Promise.all([
             getCart(),
@@ -37,7 +37,7 @@ const AuthDataLoader = () => {
     };
 
     loadData();
-  }, [isAuthenticated, dispatch]);
+  }, [isAuthenticated, user?.role, dispatch]);
 
   return null;
 };

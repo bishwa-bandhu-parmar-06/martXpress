@@ -32,14 +32,12 @@ const adminSchema = new mongoose.Schema(
         message: "Please enter a valid 10-digit phone number",
       },
     },
-    // Addresses (reference Address model)
     addresses: [
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "address",
       },
     ],
-    // Role & permissions
     role: {
       type: String,
       enum: ["seller", "admin", "user"],

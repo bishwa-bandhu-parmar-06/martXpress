@@ -5,6 +5,7 @@ import productModel from "../models/productModel.js";
 import bcrypt from "bcryptjs";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { CustomError } from "../utils/customError.js";
+import redisClient from "../config/redisClient.js";
 
 /* ---------------------------- GET ADMIN PROFILE ---------------------------- */
 export const getAdminProfile = asyncHandler(async (req, res) => {
@@ -182,10 +183,15 @@ export const deleteUser = asyncHandler(async (req, res) => {
 });
 
 /* -------------------------- PRODUCT MANAGEMENT -------------------------- */
-export const getAllProducts = asyncHandler(async (_, res) => {
+export const getAllProducts = asyncHandler(async (req, res) => {
   const products = await productModel
     .find()
-    .populate("sellerId", "shopName email")
+    .populate({
+      path: "sellerId",
+      model: sellerModel,
+      select: "shopName email name",
+      strictPopulate: false,
+    })
     .sort({ createdAt: -1 });
 
   res.status(200).json({
@@ -197,9 +203,22 @@ export const getAllProducts = asyncHandler(async (_, res) => {
 });
 
 export const deleteProduct = asyncHandler(async (req, res) => {
-  const deleted = await productModel.findByIdAndDelete(req.params.id);
+  const { productid } = req.params;
+  const deleted = await productModel.findByIdAndDelete(productid);
 
   if (!deleted) throw new CustomError("Product not found", 404);
+
+  //  THE FIX: Invalidate Redis Cache
+  try {
+    // Find all cache keys related to admin products and dashboard stats
+    const productKeys = await redisClient.keys("cache:*/api/admin/get-all-products*");
+    const statKeys = await redisClient.keys("cache:*/api/admin/dashboard/stats*");
+    
+    if (productKeys.length > 0) await redisClient.del(productKeys);
+    if (statKeys.length > 0) await redisClient.del(statKeys);
+  } catch (err) {
+    console.error("Redis Cache Invalidation Failed:", err);
+  }
 
   res.status(200).json({
     status: 200,
