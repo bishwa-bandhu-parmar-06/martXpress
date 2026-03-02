@@ -59,12 +59,19 @@ connectDB();
  * SECURITY
  * =========================
  */
+/**
+ * =========================
+ * SECURITY
+ * =========================
+ */
 app.use(
   helmet({
     contentSecurityPolicy: false,
     crossOriginEmbedderPolicy: false,
-  }),
+    crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
+  })
 );
+
 
 app.use(compression());
 app.disable("x-powered-by");
@@ -128,10 +135,10 @@ app.use("/api/rating", ratingRoutes);
 app.use(express.static(path.join(__dirname, "client/dist")));
 
 // SPA fallback (VERY IMPORTANT)
-app.use((req, res) => {
+// SPA fallback (VERY IMPORTANT)
+app.get("/{*splat}", (req, res) => {
   res.sendFile(path.resolve(__dirname, "client", "dist", "index.html"));
 });
-
 /**
  * =========================
  * ERROR HANDLER (ALWAYS LAST)
