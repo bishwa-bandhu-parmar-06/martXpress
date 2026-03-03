@@ -60,18 +60,17 @@ const addressWriteLimiter = rateLimit({
 // Auth required
 routes.use(verifyToken, authorizeRoles("user"));
 // User profile
-routes.get("/user-profile", cacheMiddleware(5 * 60), getUserProfile);
+routes.get("/user-profile",  getUserProfile);
 
 routes.post("/update-user-details", updateUsersDetails);
 
 // Address management
-routes.post("/add-user-address", cacheMiddleware(5 * 60), addAddress);
+routes.post("/add-user-address",  addAddress);
 
-routes.get("/all-user-address", cacheMiddleware(5 * 60), getAllAddresses);
+routes.get("/all-user-address",  getAllAddresses);
 
 routes.get(
   "/single-address/:addressId",
-  cacheMiddleware(5 * 60),
   getSingleAddress,
 );
 

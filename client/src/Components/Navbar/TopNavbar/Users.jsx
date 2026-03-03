@@ -58,7 +58,7 @@ const Users = () => {
           {
             label: "My Orders",
             icon: <ShoppingBag size={16} />,
-            path: "/users/orders",
+            path: "/users/dashboard?tab=orders",
           },
         ]
       : []),

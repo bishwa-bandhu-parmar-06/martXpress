@@ -23,9 +23,12 @@ import UsersDashBoard from "./Pages/Users/UsersDashBoard";
 import AdminDashBoard from "./Pages/Admin/AdminDashBoard";
 import AdminAuth from "./Pages/Admin/AdminAuth";
 import ProtectedRoute from "./Components/Common/ProtectedRoute";
+import GuestRoute from "./Components/Common/GuestRoute"; // <-- Import GuestRoute
 import ScrollToTop from "./Components/Common/ScrollToTop";
 import WishlistPage from "./Pages/WishlistPage";
 import AuthDataLoader from "./Features/Cart/AuthDataLoader";
+import CheckoutPage from "./Pages/Checkout/CheckoutPage";
+import OrderDetailsPage from "./Pages/Users/OrderDetailsPage";
 
 const App = () => {
   const isLoading = useInitialLoader();
@@ -44,27 +47,80 @@ const App = () => {
         <TopNavbar />
         <BottomNavbar />
         <Routes>
+          {/* ========================================== */}
+          {/* PUBLIC ROUTES (Accessible by anyone) */}
+          {/* ========================================== */}
           <Route path="/" element={<Home />} />
-          <Route path="/cart" element={<CartPage />} />
-          <Route path="/wishlist" element={<WishlistPage />} />
           <Route path="/help" element={<HelpPage />} />
           <Route path="/product/:productId" element={<ProductDetailsPage />} />
+          <Route path="/brands" element={<BrandsPage />} />
+          <Route path="/brand/:brandSlug" element={<BrandPage />} />
+          <Route path="/categories" element={<CategoriesPage />} />
+          <Route path="/category/:categorySlug" element={<CategoryPage />} />
 
-          {/* Auth Page */}
-          <Route path="/users/auth" element={<UsersAuth />} />
-          <Route path="/sellers/auth" element={<SellerAuth />} />
-          <Route path="/admins/auth" element={<AdminAuth />} />
-
-          {/* Dashboard  */}
+          {/* ========================================== */}
+          {/* GUEST ROUTES (Only accessible if NOT logged in) */}
+          {/* ========================================== */}
           <Route
-            path="/admin/dashboard"
+            path="/users/auth"
             element={
-              <ProtectedRoute allowedRoles={["admin"]}>
-                <AdminDashBoard />
-              </ProtectedRoute>
+              <GuestRoute>
+                <UsersAuth />
+              </GuestRoute>
+            }
+          />
+          <Route
+            path="/sellers/auth"
+            element={
+              <GuestRoute>
+                <SellerAuth />
+              </GuestRoute>
+            }
+          />
+          <Route
+            path="/admins/auth"
+            element={
+              <GuestRoute>
+                <AdminAuth />
+              </GuestRoute>
             }
           />
 
+          {/* ========================================== */}
+          {/* USER PROTECTED ROUTES (Buyers Only) */}
+          {/* ========================================== */}
+          <Route
+            path="/cart"
+            element={
+              <ProtectedRoute allowedRoles={["user"]}>
+                <CartPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/wishlist"
+            element={
+              <ProtectedRoute allowedRoles={["user"]}>
+                <WishlistPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/user/order/:orderId"
+            element={
+              <ProtectedRoute allowedRoles={["user"]}>
+                <OrderDetailsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/checkout"
+            element={
+              <ProtectedRoute allowedRoles={["user"]}>
+                <CheckoutPage />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/users/dashboard"
             element={
@@ -74,6 +130,9 @@ const App = () => {
             }
           />
 
+          {/* ========================================== */}
+          {/* SELLER PROTECTED ROUTES (Vendors Only) */}
+          {/* ========================================== */}
           <Route
             path="/sellers/dashboard"
             element={
@@ -83,15 +142,21 @@ const App = () => {
             }
           />
 
-          {/* All Brands And Single Brand Page */}
-          <Route path="/brands" element={<BrandsPage />} />
-          <Route path="/brand/:brandSlug" element={<BrandPage />} />
+          {/* ========================================== */}
+          {/* ADMIN PROTECTED ROUTES (Staff Only) */}
+          {/* ========================================== */}
+          <Route
+            path="/admin/dashboard"
+            element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <AdminDashBoard />
+              </ProtectedRoute>
+            }
+          />
 
-          {/* All Categories And Single category  Page */}
-          <Route path="/categories" element={<CategoriesPage />} />
-          <Route path="/category/:categorySlug" element={<CategoryPage />} />
-
-          {/* 404 Route */}
+          {/* ========================================== */}
+          {/* 404 NOT FOUND */}
+          {/* ========================================== */}
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
         <Footer />

@@ -4,6 +4,8 @@ import {
   placeOrder,
   getMyOrders,
   getOrderById,
+  cancelOrder,
+  requestReturnOrder,
 } from "../controllers/orderControllers.js";
 import {
   placeOrderLimiter,
@@ -16,15 +18,15 @@ router.use(verifyToken, authorizeRoles("user"));
 router.post("/place", placeOrder);
 router.get(
   "/my-orders",
-  // orderReadLimiter,
-  cacheMiddleware(5 * 60),
+
   getMyOrders,
 );
 router.get(
   "/get-order/:orderId",
-  // orderReadLimiter,
-  cacheMiddleware(5 * 60),
+
   getOrderById,
 );
 
+router.post("/cancel-order/:orderId", cancelOrder);
+router.post("/return-order/:orderId", requestReturnOrder);
 export default router;

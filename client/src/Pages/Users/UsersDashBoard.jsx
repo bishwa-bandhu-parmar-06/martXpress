@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { toast } from "sonner"; // Using Sonner for all notifications
+import { toast } from "sonner";
+import { useLocation } from "react-router-dom";
 
 // API & Redux
 import {
@@ -43,6 +44,7 @@ const initialAddressState = {
 const UsersDashBoard = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const location = useLocation();
 
   const [activeTab, setActiveTab] = useState("profile");
   const [profileData, setProfileData] = useState(null);
@@ -68,6 +70,15 @@ const UsersDashBoard = () => {
     mobile: "",
   });
   const [isProfileSubmitting, setIsProfileSubmitting] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tabFromUrl = params.get("tab");
+
+    if (tabFromUrl) {
+      setActiveTab(tabFromUrl);
+    }
+  }, [location.search]);
 
   useEffect(() => {
     const fetchDashboardData = async () => {

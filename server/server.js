@@ -37,7 +37,7 @@ import cartRoutes from "./routes/cartRoutes.js";
 import wishlistRoutes from "./routes/wishlistRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
 import ratingRoutes from "./routes/ratingRoutes.js";
-
+import paymentRoutes from "./routes/paymentRoutes.js";
 /**
  * =========================
  * APP INIT
@@ -69,9 +69,8 @@ app.use(
     contentSecurityPolicy: false,
     crossOriginEmbedderPolicy: false,
     crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
-  })
+  }),
 );
-
 
 app.use(compression());
 app.disable("x-powered-by");
@@ -125,7 +124,7 @@ app.use("/api/cart", cartRoutes);
 app.use("/api/wishlist", wishlistRoutes);
 app.use("/api/order", orderRoutes);
 app.use("/api/rating", ratingRoutes);
-
+app.use("/api/payment", paymentRoutes);
 /**
  * =========================
  * FRONTEND SERVE

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useSelector } from "react-redux"; // <-- 1. Import useSelector
 import SearchBox from "./SearchBox";
 import logo from "/MartXpresslogo-removebg-preview.png";
 import Location from "./Location";
@@ -14,6 +15,12 @@ import { Menu, X, Search } from "lucide-react";
 const TopNavbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  // 2. Get auth state from Redux
+  const { isAuthenticated, user } = useSelector((state) => state.auth);
+
+  // 3. Check if the current viewer is a regular buyer
+  const isBuyer = isAuthenticated && user?.role === "user";
+
   useEffect(() => {
     document.body.style.overflow = isMobileMenuOpen ? "hidden" : "unset";
     return () => {
@@ -26,21 +33,17 @@ const TopNavbar = () => {
       <div className="max-w-360 mx-auto px-4 h-20 flex items-center justify-between gap-4">
         {/* LEFT: Logo & Mobile Menu */}
         <div className="flex items-center gap-2 shrink-0 h-full">
-          {/* Mobile Hamburger - Slightly padded for better touch target */}
           <button
             className="lg:hidden p-2 -ml-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
             onClick={() => setIsMobileMenuOpen(true)}
           >
-            <Menu size={28} /> {/* Increased icon size to 28 */}
+            <Menu size={28} />
           </button>
 
           <Link to="/" className="flex items-center h-full py-1">
             <img
               src={logo}
               alt="Logo"
-              /* Mobile: h-12 (was 10)
-         Desktop: lg:h-20 (was 12) - This will fill the 80px (h-20) navbar nicely
-      */
               className="h-12 lg:h-20 w-auto object-contain transition-transform duration-300 hover:scale-105"
             />
           </Link>
@@ -56,7 +59,6 @@ const TopNavbar = () => {
 
         {/* RIGHT: Actions */}
         <div className="flex items-center gap-1 sm:gap-2">
-          {/* Mobile Search Icon (Triggers a search overlay or scrolls to search) */}
           <button className="lg:hidden p-2 text-gray-600 dark:text-gray-300">
             <Search size={22} />
           </button>
@@ -70,8 +72,13 @@ const TopNavbar = () => {
           </div>
 
           <div className="flex items-center gap-1">
-            <WishlistIcon />
-            <Cart />
+            {/* 4. Conditionally render Cart & Wishlist ONLY if role is 'user' */}
+            {isBuyer && (
+              <>
+                <WishlistIcon />
+                <Cart />
+              </>
+            )}
             <Users />
           </div>
         </div>
