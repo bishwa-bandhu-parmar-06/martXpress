@@ -16,6 +16,7 @@ import {
 } from "../controllers/webController.js";
 import { getProductsByBrand } from "../controllers/brandsControllers.js";
 import { cacheMiddleware } from "../middleware/redisMiddleware.js";
+import { getSearchSuggestions, syncDatabaseToOpenSearch } from "../controllers/searchController.js";
 const router = express.Router();
 
 // Public routes
@@ -23,6 +24,9 @@ router.get("/products", cacheMiddleware(600), getAllProducts);
 router.get("/product/:productId", getSingleProduct);
 router.get("/seller/:sellerId/products", getProductsBySeller);
 router.get("/search", searchProducts);
+router.get("/search/suggestions", getSearchSuggestions);
+router.get("/search/sync", syncDatabaseToOpenSearch);
+
 router.get("/featured", cacheMiddleware(600), getFeaturedProducts);
 router.get("/categories", cacheMiddleware(600), getCategories);
 router.get("/all-brands", cacheMiddleware(600), getBrands);

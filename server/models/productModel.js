@@ -1,5 +1,8 @@
 import mongoose from "mongoose";
 import { PRODUCT_CATEGORIES } from "../config/constants.js";
+
+import { esClient } from "../config/elasticsearch.js";
+
 const productSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
@@ -44,7 +47,7 @@ const productSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-// ⭐ Auto-calc finalPrice on save
+// Auto-calc finalPrice on save
 productSchema.pre("save", function (next) {
   this.finalPrice =
     this.discount > 0
@@ -53,7 +56,7 @@ productSchema.pre("save", function (next) {
   next();
 });
 
-// ⭐ Auto-calc finalPrice on update
+// Auto-calc finalPrice on update
 productSchema.pre("findOneAndUpdate", function (next) {
   const update = this.getUpdate();
   if (update.price || update.discount) {
@@ -65,27 +68,95 @@ productSchema.pre("findOneAndUpdate", function (next) {
 });
 
 // ----------------------
-// 🔥 High Performance Indexes
+// High Performance Indexes (MongoDB)
 // ----------------------
-
 productSchema.index({ createdAt: -1 });
-
 productSchema.index({ sellerId: 1, createdAt: -1 });
-
 productSchema.index({ featured: 1, status: 1, createdAt: -1 });
-
 productSchema.index({ category: 1 });
-
 productSchema.index({ brand: 1 });
-
 productSchema.index({ averageRating: -1 });
 
+// We keep the Mongo text index as a fallback just in case ES is ever down
 productSchema.index({
   name: "text",
   description: "text",
   brand: "text",
   category: "text",
   tags: "text",
+});
+
+// ==========================================
+// ELASTICSEARCH AUTOMATIC SYNC HOOKS
+// ==========================================
+
+// Helper function to format data for Elasticsearch
+const formatForES = (doc) => ({
+  name: doc.name,
+  description: doc.description,
+  brand: doc.brand,
+  category: doc.category,
+  tags: doc.tags,
+  price: doc.price,
+  finalPrice: doc.finalPrice,
+  images: doc.images,
+  status: doc.status,
+  averageRating: doc.averageRating,
+  featured: doc.featured,
+});
+
+// 1. Sync on CREATE
+productSchema.post("save", async function (doc) {
+  try {
+    if (esClient) {
+      await esClient.index({
+        index: "products",
+        id: doc._id.toString(), // Keep MongoDB ID and ES ID identical
+        body: formatForES(doc),
+      });
+      console.log(`[Elasticsearch] Synced new product: ${doc._id}`);
+    }
+  } catch (err) {
+    console.error("[Elasticsearch] Failed to sync on save:", err.message);
+  }
+});
+
+// 2. Sync on UPDATE
+productSchema.post("findOneAndUpdate", async function (doc) {
+  // 'doc' is the updated document because we use { new: true } in our controllers usually
+  if (doc) {
+    try {
+      if (esClient) {
+        await esClient.index({
+          index: "products",
+          id: doc._id.toString(),
+          body: formatForES(doc),
+        });
+        console.log(`[Elasticsearch] Updated product: ${doc._id}`);
+      }
+    } catch (err) {
+      console.error("[Elasticsearch] Failed to sync on update:", err.message);
+    }
+  }
+});
+
+// 3. Sync on DELETE
+productSchema.post("findOneAndDelete", async function (doc) {
+  if (doc) {
+    try {
+      if (esClient) {
+        await esClient.delete({
+          index: "products",
+          id: doc._id.toString(),
+        });
+        console.log(`[Elasticsearch] Deleted product: ${doc._id}`);
+      }
+    } catch (err) {
+      // Ignore 404 errors (meaning it was already deleted or never existed in ES)
+      if (err.meta && err.meta.statusCode === 404) return;
+      console.error("[Elasticsearch] Failed to delete:", err.message);
+    }
+  }
 });
 
 const Product = mongoose.model("product", productSchema);

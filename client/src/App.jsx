@@ -29,6 +29,7 @@ import WishlistPage from "./Pages/WishlistPage";
 import AuthDataLoader from "./Features/Cart/AuthDataLoader";
 import CheckoutPage from "./Pages/Checkout/CheckoutPage";
 import OrderDetailsPage from "./Pages/Users/OrderDetailsPage";
+import SearchPage from "./Pages/SearchPage";
 
 const App = () => {
   const isLoading = useInitialLoader();
@@ -57,7 +58,7 @@ const App = () => {
           <Route path="/brand/:brandSlug" element={<BrandPage />} />
           <Route path="/categories" element={<CategoriesPage />} />
           <Route path="/category/:categorySlug" element={<CategoryPage />} />
-
+          <Route path="/search" element={<SearchPage />} />
           {/* ========================================== */}
           {/* GUEST ROUTES (Only accessible if NOT logged in) */}
           {/* ========================================== */}
