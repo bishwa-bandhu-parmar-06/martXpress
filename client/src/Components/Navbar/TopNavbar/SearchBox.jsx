@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import api from "../../../API/axiosInstance";
 
-const SearchBox = () => {
+const SearchBox = ({ isMobile }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
 
@@ -15,7 +15,6 @@ const SearchBox = () => {
 
   const wrapperRef = useRef(null);
 
-  // --- DEBOUNCE & FETCH LOGIC ---
   useEffect(() => {
     if (query.trim().length < 2) {
       setSuggestions([]);
@@ -41,7 +40,6 @@ const SearchBox = () => {
     return () => clearTimeout(delayDebounceFn);
   }, [query]);
 
-  // --- CLICK OUTSIDE TO CLOSE ---
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
@@ -52,7 +50,6 @@ const SearchBox = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // --- HANDLERS ---
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     if (query.trim()) {
@@ -68,12 +65,12 @@ const SearchBox = () => {
   };
 
   return (
-    // FIX 1: Removed w-[80%], added w-full so it expands beautifully
     <div ref={wrapperRef} className="w-full relative z-50">
       <form
         onSubmit={handleSearchSubmit}
-        // FIX 2: Increased height to h-12 (or ~50px) for a larger, premium look
-        className="flex items-center h-12 border-2 border-primary rounded-xl overflow-hidden bg-white dark:bg-gray-800 focus-within:ring-4 focus-within:ring-primary/20 transition-all shadow-sm"
+        className={`flex items-stretch ${
+          isMobile ? "h-10.5" : "h-12"
+        } border-2 border-primary rounded-xl overflow-hidden bg-white dark:bg-gray-800 focus-within:ring-4 focus-within:ring-primary/20 transition-all shadow-sm`}
       >
         <input
           type="text"
@@ -83,25 +80,28 @@ const SearchBox = () => {
             if (suggestions.length > 0) setShowDropdown(true);
           }}
           placeholder={t("search")}
-          // FIX 3: Increased text size to text-base and px-5
-          className="flex-1 h-full px-5 text-base text-gray-900 dark:text-white bg-transparent placeholder:text-gray-400 focus:outline-none"
+          className={`flex-1 h-full bg-transparent placeholder:text-gray-400 focus:outline-none text-gray-900 dark:text-white ${
+            isMobile ? "px-4 text-sm" : "px-5 text-base"
+          }`}
           autoComplete="off"
         />
 
+        {/* FIX: Flex items-center to keep the icon perfectly centered within the fully stretched button */}
         <button
           type="submit"
-          className="h-full px-6 text-white bg-primary hover:bg-primary/90 cursor-pointer transition-colors flex items-center justify-center"
+          className={`flex items-center justify-center text-white bg-primary hover:bg-primary/90 cursor-pointer transition-colors ${
+            isMobile ? "px-4" : "px-6"
+          }`}
         >
           {isLoading ? (
-            <Loader2 size={20} className="animate-spin" />
+            <Loader2 size={isMobile ? 18 : 20} className="animate-spin" />
           ) : (
-            // FIX 4: Increased search icon size
-            <Search size={22} strokeWidth={2.5} /> 
+            <Search size={isMobile ? 18 : 22} strokeWidth={2.5} />
           )}
         </button>
       </form>
 
-      {/* --- DROPDOWN SUGGESTIONS (Unchanged) --- */}
+      {/* DROPDOWN REMAINS UNCHANGED */}
       {showDropdown && (
         <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
           {suggestions.length === 0 && !isLoading ? (
@@ -127,7 +127,6 @@ const SearchBox = () => {
                       className="w-full h-full object-contain p-1 mix-blend-multiply dark:mix-blend-normal"
                     />
                   </div>
-
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
                       {item.name}
@@ -136,7 +135,6 @@ const SearchBox = () => {
                       {item.category}
                     </p>
                   </div>
-
                   <div className="text-sm font-bold text-primary shrink-0">
                     ₹{item.finalPrice?.toLocaleString("en-IN")}
                   </div>

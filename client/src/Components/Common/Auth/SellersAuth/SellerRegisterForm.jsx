@@ -96,21 +96,22 @@ const SellerRegisterForm = ({ onSwitchToLogin }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-5">
       {error && (
         <div className="p-3 bg-red-50 text-red-600 rounded-xl text-sm font-bold text-center border border-red-100">
           {error}
         </div>
       )}
 
+      {/* SINGLE UNIFIED GRID FOR PERFECT ALIGNMENT */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Name */}
-        <div className="space-y-1">
-          <label className="text-xs font-bold text-gray-500 uppercase ml-1">
+        {/* Full Name */}
+        <div className="space-y-1.5">
+          <label className="text-[11px] font-bold text-gray-500 uppercase ml-1 tracking-wider">
             Full Name
           </label>
           <div className="relative group">
-            <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-primary transition-colors" />
+            <User className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-primary transition-colors" />
             <input
               name="name"
               onChange={handleChange}
@@ -120,13 +121,14 @@ const SellerRegisterForm = ({ onSwitchToLogin }) => {
             />
           </div>
         </div>
-        {/* Email */}
-        <div className="space-y-1">
-          <label className="text-xs font-bold text-gray-500 uppercase ml-1">
+
+        {/* Business Email */}
+        <div className="space-y-1.5">
+          <label className="text-[11px] font-bold text-gray-500 uppercase ml-1 tracking-wider">
             Business Email
           </label>
           <div className="relative group">
-            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-primary transition-colors" />
+            <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-primary transition-colors" />
             <input
               name="email"
               type="email"
@@ -137,13 +139,14 @@ const SellerRegisterForm = ({ onSwitchToLogin }) => {
             />
           </div>
         </div>
+
         {/* Shop Name */}
-        <div className="space-y-1">
-          <label className="text-xs font-bold text-gray-500 uppercase ml-1">
+        <div className="space-y-1.5">
+          <label className="text-[11px] font-bold text-gray-500 uppercase ml-1 tracking-wider">
             Shop Name
           </label>
           <div className="relative group">
-            <Store className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-primary transition-colors" />
+            <Store className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-primary transition-colors" />
             <input
               name="shopName"
               onChange={handleChange}
@@ -153,13 +156,14 @@ const SellerRegisterForm = ({ onSwitchToLogin }) => {
             />
           </div>
         </div>
+
         {/* GST Number */}
-        <div className="space-y-1">
-          <label className="text-xs font-bold text-gray-500 uppercase ml-1">
+        <div className="space-y-1.5">
+          <label className="text-[11px] font-bold text-gray-500 uppercase ml-1 tracking-wider">
             GST Number
           </label>
           <div className="relative group">
-            <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-primary transition-colors" />
+            <Hash className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-primary transition-colors" />
             <input
               name="gstNumber"
               onChange={handleChange}
@@ -169,73 +173,75 @@ const SellerRegisterForm = ({ onSwitchToLogin }) => {
             />
           </div>
         </div>
-      </div>
 
-      {/* GST File */}
-      <div className="space-y-1">
-        <label className="text-xs font-bold text-gray-500 uppercase ml-1">
-          GST Certificate (PDF/Image)
-        </label>
-        <div className="relative group cursor-pointer flex items-center">
-          <FileText className="absolute left-3 h-4 w-4 text-gray-400" />
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileChange}
-            accept=".jpg, .pdf, .jpeg, .png"
-            className="w-full pl-10 cursor-pointer pr-12 p-2 text-sm text-gray-500 border border-dashed border-gray-300 dark:border-gray-700 rounded-xl bg-gray-50/50 dark:bg-gray-800/50 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 transition-all"
-          />
-
+        {/* GST File - Spans across both columns on desktop */}
+        <div className="space-y-1.5 md:col-span-2">
+          <label className="text-[11px] font-bold text-gray-500 uppercase ml-1 tracking-wider">
+            GST Certificate (PDF/Image)
+          </label>
+          <div className="relative group cursor-pointer flex items-center">
+            <FileText className="absolute left-3.5 h-4 w-4 text-gray-400" />
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              accept=".jpg, .pdf, .jpeg, .png"
+              className="w-full pl-10 cursor-pointer pr-12 py-2.5 text-sm text-gray-500 border border-dashed border-gray-300 dark:border-gray-700 rounded-xl bg-gray-50/50 dark:bg-gray-800/50 file:mr-4 file:py-1.5 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 transition-all"
+            />
+            {gstCertificate && (
+              <button
+                type="button"
+                onClick={handleRemoveFile}
+                className="absolute cursor-pointer right-3 p-1.5 bg-red-100 text-red-600 rounded-full hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 transition-colors shadow-sm"
+                title="Remove file"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
           {gstCertificate && (
-            <button
-              type="button"
-              onClick={handleRemoveFile}
-              className="absolute cursor-pointer right-3 p-1.5 bg-red-100 text-red-600 rounded-full hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 transition-colors shadow-sm"
-              title="Remove file"
-            >
-              <X className="h-4 w-4" />
-            </button>
+            <p className="text-[10px] text-primary font-medium ml-2 mt-1 truncate max-w-[90%]">
+              Selected: {gstCertificate.name}
+            </p>
           )}
         </div>
-        {gstCertificate && (
-          <p className="text-[10px] text-primary font-medium ml-2 mt-1 truncate max-w-[90%]">
-            Selected: {gstCertificate.name}
-          </p>
-        )}
-      </div>
 
-      {/* Passwords Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Password */}
-        <div className="relative group">
-          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-primary transition-colors" />
-          <input
-            name="password"
-            type={showPass ? "text" : "password"}
-            placeholder="Password"
-            onChange={handleChange}
-            required
-            className="w-full pl-10 pr-10 py-3.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:border-primary transition-all"
-          />
-          <button
-            type="button"
-            onClick={() => setShowPass(!showPass)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary transition-colors"
-          >
-            {showPass ? (
-              <EyeOff className="h-4 w-4" />
-            ) : (
-              <Eye className="h-4 w-4" />
-            )}
-          </button>
+        {/* Password (Now wrapped properly with a label!) */}
+        <div className="space-y-1.5">
+          <label className="text-[11px] font-bold text-gray-500 uppercase ml-1 tracking-wider">
+            Password
+          </label>
+          <div className="relative group">
+            <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-primary transition-colors" />
+            <input
+              name="password"
+              type={showPass ? "text" : "password"}
+              placeholder="••••••••"
+              onChange={handleChange}
+              required
+              className="w-full pl-10 pr-10 py-3.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 dark:text-white outline-none focus:border-primary transition-all"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPass(!showPass)}
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary transition-colors"
+            >
+              {showPass ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
+            </button>
+          </div>
         </div>
 
-        <div className="space-y-1">
-          <label className="text-xs font-bold text-gray-500 uppercase ml-1">
+        {/* Mobile Number */}
+        <div className="space-y-1.5">
+          <label className="text-[11px] font-bold text-gray-500 uppercase ml-1 tracking-wider">
             Mobile Number
           </label>
           <div className="relative group">
-            <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-primary transition-colors" />
+            <Hash className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-primary transition-colors" />
             <input
               name="mobile"
               type="tel"
@@ -248,28 +254,29 @@ const SellerRegisterForm = ({ onSwitchToLogin }) => {
         </div>
       </div>
 
-      {/* Terms */}
-      <div className="flex items-center gap-2 p-2">
+      {/* Terms & Conditions */}
+      <div className="flex items-center gap-2 px-1 pt-2">
         <input
           type="checkbox"
           name="TermsAndCdn"
           id="terms"
           onChange={handleChange}
           required
-          className="h-4 w-4 rounded text-primary border-gray-300 focus:ring-primary cursor-pointer"
+          className="h-4 w-4 rounded text-primary border-gray-300 focus:ring-primary cursor-pointer transition-colors"
         />
         <label
           htmlFor="terms"
-          className="text-xs text-gray-500 select-none cursor-pointer"
+          className="text-[13px] font-medium text-gray-500 dark:text-gray-400 select-none cursor-pointer"
         >
           I agree to the Seller Terms & Conditions
         </label>
       </div>
 
+      {/* Submit Button */}
       <button
         type="submit"
         disabled={loading}
-        className="w-full cursor-pointer bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-2xl shadow-lg shadow-primary/20 transition-all active:scale-[0.98] disabled:opacity-50"
+        className="w-full mt-2 cursor-pointer bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/20 transition-all active:scale-[0.98] disabled:opacity-50"
       >
         {loading ? "Creating Account..." : "Register as Seller"}
       </button>

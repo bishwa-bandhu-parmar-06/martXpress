@@ -23,10 +23,9 @@ const Theme = () => {
 
   return (
     <div
-      className="h-9 w-full px-4 sm:px-10 flex items-center justify-between
+      className="hidden md:flex h-9 w-full px-4 sm:px-10 items-center justify-between
       bg-gray-100 dark:bg-gray-900 text-gray-700 dark:text-gray-200 text-xs sm:text-sm transition-colors duration-300 border-b dark:border-gray-800"
     >
-      {/* Left side – Support */}
       <div className="flex items-center gap-4">
         <div
           onClick={() => navigate("/help")}
@@ -45,7 +44,6 @@ const Theme = () => {
         </a>
       </div>
 
-      {/* Right side – Theme Toggle */}
       <div
         onClick={() => setDark(!dark)}
         className="flex items-center gap-2 sm:gap-2.5 cursor-pointer select-none group hover:text-primary transition-colors"
