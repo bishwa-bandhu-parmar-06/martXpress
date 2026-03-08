@@ -1,0 +1,33 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+
+  <!-- Cart Frame -->
+  <path d="M70 170 
+           L120 170 
+           L170 310 
+           L360 310 
+           L400 210"
+        stroke="#1F5F7A"
+        stroke-width="24"
+        fill="none"
+        stroke-linecap="round"
+        stroke-linejoin="round"/>
+
+  <!-- Cart Base -->
+  <rect x="160" y="300" width="200" height="22" rx="10" fill="#1F5F7A"/>
+
+  <!-- Wheels -->
+  <circle cx="210" cy="360" r="22" fill="#1F5F7A"/>
+  <circle cx="320" cy="360" r="22" fill="#1F5F7A"/>
+
+  <!-- Shopping Bag -->
+  <rect x="190" y="150" width="130" height="120" rx="12" fill="#F47C20"/>
+
+  <!-- Bag Handle -->
+  <path d="M225 150 
+           C225 120 285 120 285 150"
+        stroke="#FFFFFF"
+        stroke-width="10"
+        fill="none"
+        stroke-linecap="round"/>
+
+</svg>

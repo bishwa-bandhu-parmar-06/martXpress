@@ -263,7 +263,6 @@ export const forgotPassword = asyncHandler(async (req, res) => {
     throw new CustomError(`No ${role} account found with this email`, 404);
   }
 
-  // 3. Generate the JWT using the role they requested
   const resetToken = jwt.sign(
     { id: user._id, role: role },
     process.env.JWT_SECRET,
@@ -298,7 +297,6 @@ export const forgotPassword = asyncHandler(async (req, res) => {
 
 // ------------------------------ RESET PASSWORD --------------------------------
 export const resetPassword = asyncHandler(async (req, res) => {
-  // Token comes from the URL parameters (e.g., /api/auth/reset-password/:token)
   const { token } = req.params;
   const { newPassword, confirmPassword } = req.body;
 
@@ -311,10 +309,8 @@ export const resetPassword = asyncHandler(async (req, res) => {
   }
 
   try {
-    // 1. Verify the token (This will throw an error if expired or invalid)
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // 2. Find the user based on the decoded role and ID
     let user;
     if (decoded.role === "user") {
       user = await userModel.findById(decoded.id).select("+password");
@@ -328,10 +324,8 @@ export const resetPassword = asyncHandler(async (req, res) => {
       throw new CustomError("User not found", 404);
     }
 
-    // 3. Update the password
     user.password = newPassword;
 
-    // 4. Save the user (Your pre-save hook in the schema will hash the new password)
     await user.save();
 
     res.status(200).json({
@@ -339,7 +333,6 @@ export const resetPassword = asyncHandler(async (req, res) => {
       message: "Password reset successfully. You can now log in.",
     });
   } catch (error) {
-    // Catch JWT verification errors specifically
     if (
       error.name === "TokenExpiredError" ||
       error.name === "JsonWebTokenError"
