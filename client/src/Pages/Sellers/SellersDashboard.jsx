@@ -40,15 +40,15 @@ import {
   getAllProductsOfLoggedInSeller,
 } from "../../API/ProductsApi/productsAPI.js";
 
-import AddProduct from "../../Components/SellersDashboard/Products/AddProduct.jsx";
+import AddProduct from "./AddProduct.jsx";
 import { getSellersDetails } from "../../API/Sellers/SellersApi.js";
-import AllOrders from "../../Components/SellersDashboard/Orders/AllOrders.jsx";
-import AllProducts from "../../Components/SellersDashboard/Products/AllProducts.jsx";
-import AnalyticsDashboard from "../../Components/SellersDashboard/AnalyticsDashboard.jsx";
-import SettingsPage from "../../Components/SellersDashboard/SettingsPage.jsx";
+import AllOrders from "./AllOrders.jsx";
+import AllProducts from "./AllProducts.jsx";
+import AnalyticsDashboard from "./AnalyticsDashboard.jsx";
+import SettingsPage from "./SettingsPage.jsx";
 import { clearAuthData } from "../../utils/auth.js";
 import { useNavigate } from "react-router-dom";
-import EditProduct from "../../Components/SellersDashboard/Products/EditProduct.jsx";
+import EditProduct from "./EditProduct.jsx";
 
 const SellersDashboard = () => {
   const navigate = useNavigate();
@@ -102,8 +102,6 @@ const SellersDashboard = () => {
     clearAuthData();
     navigate("/");
   };
-
-  
 
   // State for orders
   const [orders] = useState([

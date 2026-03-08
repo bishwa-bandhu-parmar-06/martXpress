@@ -4,12 +4,12 @@ import { login } from "../../../../API/Common/commonApi.js";
 import { Eye, EyeOff, Mail, Lock } from "lucide-react";
 import { useDispatch } from "react-redux";
 import { loginSuccess } from "../../../../Features/auth/AuthSlice.js";
-
-
+import ForgotPasswordModal from "./ForgotPassword.jsx";
 const LoginForm = ({ userType = "user" }) => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
+  const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const dispatch = useDispatch();
@@ -98,6 +98,7 @@ const LoginForm = ({ userType = "user" }) => {
             </label>
             <button
               type="button"
+              onClick={() => setIsForgotModalOpen(true)}
               className={`text-xs font-bold hover:underline ${isAdmin ? "text-red-600" : "text-primary"}`}
             >
               Forgot?
@@ -142,7 +143,12 @@ const LoginForm = ({ userType = "user" }) => {
               : "Sign In"}
         </button>
       </form>
-      
+
+      <ForgotPasswordModal
+        isOpen={isForgotModalOpen}
+        onClose={() => setIsForgotModalOpen(false)}
+        userType={userType}
+      />
     </>
   );
 };

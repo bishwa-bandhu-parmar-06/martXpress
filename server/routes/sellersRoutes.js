@@ -7,8 +7,10 @@ import { upload } from "../uploads/multer.js";
 import redisClient from "../config/redisClient.js";
 
 import {
+  getSellerOrders,
   getSellerProfile,
   updateSellerDetails,
+  updateSellerOrderStatus,
 } from "../controllers/sellersControllers.js";
 import {
   addAddress,
@@ -60,7 +62,7 @@ const addressWriteLimiter = rateLimit({
 routes.use(verifyToken, authorizeRoles("seller"));
 
 // Seller profile
-routes.get("/seller-profile",   cacheMiddleware(5 * 60),getSellerProfile);
+routes.get("/seller-profile", cacheMiddleware(5 * 60), getSellerProfile);
 
 // Update seller details (files + DB)
 routes.post(
@@ -74,11 +76,15 @@ routes.post(
 );
 
 // Address management
-routes.post("/add-seller-address",cacheMiddleware(5 * 60), addAddress);
+routes.post("/add-seller-address", cacheMiddleware(5 * 60), addAddress);
 
-routes.get("/all-seller-address",cacheMiddleware(5 * 60), getAllAddresses);
+routes.get("/all-seller-address", cacheMiddleware(5 * 60), getAllAddresses);
 
-routes.get("/single-address/:addressId",cacheMiddleware(5 * 60), getSingleAddress);
+routes.get(
+  "/single-address/:addressId",
+  cacheMiddleware(5 * 60),
+  getSingleAddress,
+);
 
 routes.post(
   "/update-seller-address/:addressId",
@@ -92,5 +98,8 @@ routes.post(
   // addressWriteLimiter,
   deleteAddress,
 );
+
+routes.get("/orders", getSellerOrders);
+routes.put("/orders/:orderId/status", updateSellerOrderStatus);
 
 export default routes;

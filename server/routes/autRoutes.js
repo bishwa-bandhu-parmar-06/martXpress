@@ -10,12 +10,16 @@ import {
   registerSeller,
   logout,
   googleAuth,
+  forgotPassword,
+  resetPassword,
 } from "../controllers/authControllers.js";
 import { upload } from "../uploads/multer.js";
 import { validate } from "../middleware/validate_middleware.js";
 import {
+  forgotPasswordSchema,
   loginSchema,
   registerSchema,
+  resetPasswordSchema,
   sellerRegisterSchema,
 } from "../validators/auth_validators.js";
 
@@ -55,4 +59,21 @@ routes.post(
 routes.post("/login", validate(loginSchema), login);
 routes.post("/logout", logout);
 routes.post("/google", googleAuth);
+
+
+// ---------------- NEW PASSWORD RESET ROUTES ----------------
+
+// 1. User submits email -> Gets link
+routes.post(
+  "/forgot-password",
+  validate(forgotPasswordSchema),
+  forgotPassword
+);
+
+// 2. User clicks link, submits new passwords -> Password updated
+routes.post(
+  "/reset-password/:token",
+  validate(resetPasswordSchema),
+  resetPassword
+);
 export default routes;

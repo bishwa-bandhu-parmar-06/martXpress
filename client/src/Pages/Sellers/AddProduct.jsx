@@ -32,7 +32,7 @@ export const PRODUCT_CATEGORIES = [
   "Mobiles & Tablets",
 ];
 
-import { AddProductsForLoggedInSeller } from "../../../API/ProductsApi/productsAPI.js";
+import { AddProductsForLoggedInSeller } from "../../API/ProductsApi/productsAPI.js";
 const AddProduct = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 

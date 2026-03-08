@@ -1,6 +1,6 @@
 import sellerModel from "../models/sellersModel.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
-import {CustomError} from "../utils/customError.js";
+import { CustomError } from "../utils/customError.js";
 
 // ----------------- GET SELLER PROFILE -----------------
 export const getSellerProfile = asyncHandler(async (req, res) => {
@@ -86,5 +86,103 @@ export const updateSellerDetails = asyncHandler(async (req, res) => {
     status: 200,
     message: "Seller details updated successfully",
     seller: updatedSeller,
+  });
+});
+
+// ----------------- GET SELLER SPECIFIC ORDERS -----------------
+export const getSellerOrders = asyncHandler(async (req, res) => {
+  const sellerId = req.user.sub || req.user.id;
+
+  // Since we added sellerId to the items array, we can query orders directly!
+  // No need to query products first. This is O(1) instead of O(N).
+  const orders = await orderModel
+    .find({ "items.sellerId": sellerId })
+    .populate("items.productId", "name images price brand")
+    .sort({ createdAt: -1 });
+
+  const sellerOrders = orders.map((order) => {
+    const orderObj = order.toObject();
+
+    // Filter items to ONLY show this seller's items
+    const sellerItems = orderObj.items.filter(
+      (item) => item.sellerId.toString() === sellerId.toString(),
+    );
+
+    orderObj.items = sellerItems;
+
+    // Calculate total amount ONLY for this seller
+    orderObj.sellerTotalAmount = sellerItems.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0,
+    );
+
+    // Set the display status based on the first item (or you can calculate an aggregate)
+    orderObj.displayStatus =
+      sellerItems.length > 0 ? sellerItems[0].itemStatus : "pending";
+
+    return orderObj;
+  });
+
+  res.status(200).json({
+    status: 200,
+    message: "Seller orders fetched successfully",
+    count: sellerOrders.length,
+    orders: sellerOrders,
+  });
+});
+
+// ----------------- UPDATE ORDER STATUS -----------------
+export const updateSellerOrderStatus = asyncHandler(async (req, res) => {
+  const sellerId = req.user.sub || req.user.id;
+  const { orderId } = req.params;
+  const { status } = req.body; // e.g., "shipped"
+
+  const validStatuses = [
+    "pending",
+    "processing",
+    "shipped",
+    "delivered",
+    "cancelled",
+  ];
+  if (!validStatuses.includes(status.toLowerCase())) {
+    throw new CustomError("Invalid order status", 400);
+  }
+
+  const order = await orderModel.findById(orderId);
+  if (!order) throw new CustomError("Order not found", 404);
+
+  let updatedCount = 0;
+
+  // Update ONLY the items belonging to this specific seller
+  order.items.forEach((item) => {
+    if (item.sellerId.toString() === sellerId.toString()) {
+      item.itemStatus = status.toLowerCase();
+      updatedCount++;
+    }
+  });
+
+  if (updatedCount === 0) {
+    throw new CustomError(
+      "Unauthorized: No items in this order belong to you",
+      403,
+    );
+  }
+
+  const allStatuses = order.items.map((i) => i.itemStatus);
+  const allDelivered = allStatuses.every((s) => s === "delivered");
+  const allShipped = allStatuses.every(
+    (s) => s === "shipped" || s === "delivered",
+  );
+
+  if (allDelivered) order.orderStatus = "delivered";
+  else if (allShipped) order.orderStatus = "shipped";
+  // ----------------------------------------------------------------------------
+
+  await order.save();
+
+  res.status(200).json({
+    status: 200,
+    message: `Updated ${updatedCount} items to ${status}`,
+    newStatus: status,
   });
 });

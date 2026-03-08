@@ -58,3 +58,29 @@ export const loginSchema = z.object({
 
   password: z.string().min(1, "Password is required"),
 });
+
+// Update your existing forgotPasswordSchema to this:
+export const forgotPasswordSchema = z.object({
+  email: z
+    .string({ required_error: "Email is required" })
+    .email({ message: "Invalid email format" }),
+  role: z.enum(["user", "seller", "admin"], {
+    required_error: "Role is required",
+    invalid_type_error: "Invalid role provided",
+  }),
+});
+
+// Validator for Reset Password (needs new password and confirmation)
+export const resetPasswordSchema = z
+  .object({
+    newPassword: z
+      .string({ required_error: "New password is required" })
+      .min(6, { message: "Password must be at least 6 characters long" }),
+    confirmPassword: z
+      .string({ required_error: "Confirm password is required" })
+      .min(6, { message: "Password must be at least 6 characters long" }),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"], // This attaches the error to the confirmPassword field
+  });

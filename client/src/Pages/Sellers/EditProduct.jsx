@@ -33,7 +33,7 @@ export const PRODUCT_CATEGORIES = [
   "Mobiles & Tablets",
 ];
 
-import { editProductDetails } from "../../../API/ProductsApi/productsAPI.js";
+import { editProductDetails } from "../../API/ProductsApi/productsAPI.js";
 
 const EditProduct = ({ isOpen, onClose, productData: initialProductData }) => {
   if (!isOpen) return null;

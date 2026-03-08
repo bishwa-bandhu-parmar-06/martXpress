@@ -40,3 +40,23 @@ export const ResendOtp = async (sellerData) => {
     throw error.response ? error.response.data : new Error("Network Error");
   }
 };
+
+// ---------------- FORGOT & RESET PASSWORD ----------------
+
+export const forgotPassword = async (payload) => {
+  try {
+    const response = await api.post("/auth/forgot-password", payload);
+    return response.data;
+  } catch (error) {
+    throw error.response ? error.response.data : new Error("Network Error");
+  }
+};
+
+export const resetPassword = async (token, payload) => {
+  try {
+    const response = await api.post(`/auth/reset-password/${token}`, payload);
+    return response.data;
+  } catch (error) {
+    throw error.response ? error.response.data : new Error("Network Error");
+  }
+};

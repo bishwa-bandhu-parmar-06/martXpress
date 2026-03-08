@@ -24,6 +24,7 @@ export const placeOrder = asyncHandler(async (req, res) => {
     userId,
     items: cart.items.map((i) => ({
       productId: i.productId._id,
+      sellerId: i.productId.sellerId,
       quantity: i.quantity,
       price: i.price,
     })),

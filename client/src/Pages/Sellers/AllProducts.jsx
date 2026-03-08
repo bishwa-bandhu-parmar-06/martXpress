@@ -1,7 +1,7 @@
 import {
   getAllProductsOfLoggedInSeller,
   deleteProductsForLoggedInSeller,
-} from "../../../API/ProductsApi/productsAPI.js";
+} from "../../API/ProductsApi/productsAPI.js";
 import React, { useEffect, useState, useMemo } from "react";
 import {
   Package,

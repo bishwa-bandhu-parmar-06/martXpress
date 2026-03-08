@@ -30,7 +30,8 @@ import AuthDataLoader from "./Features/Cart/AuthDataLoader";
 import CheckoutPage from "./Pages/Checkout/CheckoutPage";
 import OrderDetailsPage from "./Pages/Users/OrderDetailsPage";
 import SearchPage from "./Pages/SearchPage";
-
+import ForgotPassword from "./Components/Common/Auth/Common/ForgotPassword";
+import ResetPassword from "./Components/Common/Auth/Common/ResetPassword";
 const App = () => {
   const isLoading = useInitialLoader();
 
@@ -83,6 +84,15 @@ const App = () => {
             element={
               <GuestRoute>
                 <AdminAuth />
+              </GuestRoute>
+            }
+          />
+
+          <Route
+            path="/reset-password/:token"
+            element={
+              <GuestRoute>
+                <ResetPassword />
               </GuestRoute>
             }
           />
