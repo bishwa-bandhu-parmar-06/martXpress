@@ -2,6 +2,7 @@ import Razorpay from "razorpay";
 import crypto from "crypto";
 import orderModel from "../models/orderModel.js";
 import cartModel from "../models/cartModel.js";
+import productModel from "../models/productModel.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { CustomError } from "../utils/customError.js";
 
@@ -33,7 +34,7 @@ export const createRazorpayOrder = asyncHandler(async (req, res) => {
   });
 });
 
-// 2. Verify Payment and Save to Database
+// 2. BULLETPROOF PAYMENT VERIFICATION
 export const verifyRazorpayPayment = asyncHandler(async (req, res) => {
   const userId = req.user.sub || req.user.id;
   const {
@@ -46,30 +47,66 @@ export const verifyRazorpayPayment = asyncHandler(async (req, res) => {
     isBuyNow,
   } = req.body;
 
-  // Verify the signature mathematically to ensure payment is legit
+  // --- 1. VERIFY SIGNATURE FIRST ---
+  if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+    throw new CustomError(
+      "Missing Razorpay signature details from frontend",
+      400,
+    );
+  }
+
   const body = razorpay_order_id + "|" + razorpay_payment_id;
   const expectedSignature = crypto
     .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
     .update(body.toString())
     .digest("hex");
 
-  const isAuthentic = expectedSignature === razorpay_signature;
-
-  if (!isAuthentic) {
+  if (expectedSignature !== razorpay_signature) {
+    console.error(
+      "❌ Signature Mismatch! Expected:",
+      expectedSignature,
+      "Got:",
+      razorpay_signature,
+    );
     throw new CustomError(
       "Payment verification failed. Invalid signature.",
       400,
     );
   }
 
-  // Format items for the database
-  const orderItems = checkoutItems.map((item) => ({
-    productId: item.productId || item.product._id,
-    quantity: item.quantity,
-    price: item.price || item.product.price,
-  }));
+  // --- 2. VALIDATE FRONTEND DATA ---
+  if (!checkoutItems || checkoutItems.length === 0) {
+    throw new CustomError("No items provided for checkout", 400);
+  }
+  if (!shippingAddress) {
+    throw new CustomError("Shipping address is missing", 400);
+  }
 
-  // Create the actual order in your database
+  // --- 3. FETCH SELLER IDs SAFELY FROM DATABASE ---
+  // We MUST map the sellerId, otherwise orderModel.create() will crash with a 400 ValidationError!
+  const orderItems = await Promise.all(
+    checkoutItems.map(async (item) => {
+      const pId = item.productId || item.product?._id;
+
+      // Fetch product to securely grab the required sellerId
+      const product = await productModel
+        .findById(pId)
+        .select("sellerId price finalPrice");
+
+      if (!product) {
+        throw new CustomError(`Product not found during checkout`, 404);
+      }
+
+      return {
+        productId: pId,
+        sellerId: product.sellerId, // Grabbed directly from DB!
+        quantity: item.quantity,
+        price: item.price || product.finalPrice || product.price,
+      };
+    }),
+  );
+
+  // --- 4. CREATE ORDER ---
   const newOrder = await orderModel.create({
     userId,
     items: orderItems,
@@ -80,7 +117,7 @@ export const verifyRazorpayPayment = asyncHandler(async (req, res) => {
     orderStatus: "processing",
   });
 
-  // If they bought from the cart, clear the cart
+  // --- 5. CLEAR CART ---
   if (!isBuyNow) {
     await cartModel.findOneAndDelete({ userId });
   }
