@@ -113,3 +113,12 @@ export const productService = {
     return response.data;
   },
 };
+
+export const addBulkProductsApi = async (formData) => {
+  const response = await api.post("/sellers/products/bulk-add", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+  return response.data;
+};

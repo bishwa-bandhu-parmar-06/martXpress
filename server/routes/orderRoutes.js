@@ -18,12 +18,12 @@ router.use(verifyToken, authorizeRoles("user"));
 router.post("/place", placeOrder);
 router.get(
   "/my-orders",
-
+cacheMiddleware(60),
   getMyOrders,
 );
 router.get(
   "/get-order/:orderId",
-
+cacheMiddleware(60),
   getOrderById,
 );
 

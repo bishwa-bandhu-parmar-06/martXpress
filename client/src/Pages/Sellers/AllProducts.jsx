@@ -600,7 +600,7 @@ const AllProducts = () => {
                   </div>
                 </div>
 
-                <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-2 min-h-[2.5rem]">
+                <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-2 min-h-10">
                   {product.description || "No description"}
                 </p>
 
@@ -726,7 +726,7 @@ const AllProducts = () => {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center">
-                        <div className="h-10 w-10 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center mr-3 flex-shrink-0">
+                        <div className="h-10 w-10 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center mr-3 shrink-0">
                           {product.images?.[0] ? (
                             <img
                               src={product.images[0]}
@@ -743,7 +743,7 @@ const AllProducts = () => {
                               {product.name}
                             </p>
                             {product.featured && (
-                              <Star className="h-3 w-3 text-yellow-400 fill-current flex-shrink-0" />
+                              <Star className="h-3 w-3 text-yellow-400 fill-current shrink-0" />
                             )}
                           </div>
                           <p className="text-xs text-gray-500 dark:text-gray-400 truncate">

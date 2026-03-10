@@ -1,5 +1,6 @@
 import orderModel from "../models/orderModel.js";
 import cartModel from "../models/cartModel.js";
+import { clearCachePattern } from "../middleware/redisMiddleware.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { CustomError } from "../utils/customError.js";
 
@@ -35,6 +36,13 @@ export const placeOrder = asyncHandler(async (req, res) => {
   });
 
   await cartModel.findOneAndDelete({ userId });
+
+await clearCachePattern("/my-orders");
+  await clearCachePattern("/get-order");
+  await clearCachePattern("/orders"); // Seller's order cache
+  await clearCachePattern("/analytics"); // Seller's analytics cache
+  await clearCachePattern("/dashboard/stats"); // Admin stats cache
+
 
   res.status(200).json({
     message: "Order placed successfully",
@@ -79,7 +87,11 @@ export const cancelOrder = asyncHandler(async (req, res) => {
   order.orderStatus = "cancelled";
   // If payment was completed, you would theoretically trigger a Razorpay refund here
   await order.save();
-
+await clearCachePattern("/my-orders");
+  await clearCachePattern("/get-order");
+  await clearCachePattern("/orders"); // Seller's order cache
+  await clearCachePattern("/analytics"); // Seller's analytics cache
+  await clearCachePattern("/dashboard/stats"); // Admin stats cache
   res.status(200).json({ message: "Order cancelled successfully" });
 });
 
@@ -94,6 +106,10 @@ export const requestReturnOrder = asyncHandler(async (req, res) => {
 
   order.orderStatus = "returned";
   await order.save();
-
+await clearCachePattern("/my-orders");
+  await clearCachePattern("/get-order");
+  await clearCachePattern("/orders"); // Seller's order cache
+  await clearCachePattern("/analytics"); // Seller's analytics cache
+  await clearCachePattern("/dashboard/stats"); // Admin stats cache
   res.status(200).json({ message: "Return requested successfully" });
 });

@@ -33,28 +33,28 @@ import { cacheMiddleware } from "../middleware/redisMiddleware.js";
 router.use(verifyToken, authorizeRoles("admin"));
 
 /* ------------------------------ Profile ------------------------------ */
-router.get("/profile", getAdminProfile);
+router.get("/profile", cacheMiddleware(300),getAdminProfile);
 router.post("/update", updateAdminDetails);
 router.post("/change-password", changeAdminPassword);
 
 /* ------------------------------ Address ------------------------------ */
 router.post("/address/add", addAddress);
-router.get("/address/all", getAllAddresses);
-router.get("/address/:addressId", getSingleAddress);
+router.get("/address/all",cacheMiddleware(300), getAllAddresses);
+router.get("/address/:addressId",cacheMiddleware(300), getSingleAddress);
 router.post("/address/update/:addressId", updateAddress);
 router.post("/address/remove/:addressId", deleteAddress);
 
 /* ------------------------- Seller Management ------------------------- */
-router.get("/sellers/approved", getApprovedSellers);
-router.get("/sellers/rejected", getRejectedSellers);
-router.get("/sellers/pending", getPendingSellers);
-router.get("/sellers/:sellerid", getSellerById);
-router.post("/sellers/:sellerid/approve", approveSeller);
-router.post("/sellers/:sellerid/reject", rejectSeller);
+router.get("/sellers/approved", cacheMiddleware(300), getApprovedSellers);
+router.get("/sellers/rejected", cacheMiddleware(300), getRejectedSellers);
+router.get("/sellers/pending", cacheMiddleware(60), getPendingSellers);
+router.get("/sellers/:sellerid", cacheMiddleware(300), getSellerById);
+router.post("/sellers/:sellerid/approve",  approveSeller);
+router.post("/sellers/:sellerid/reject",  rejectSeller);
 router.post("/sellers/:sellerid/remove", deleteSeller);
 
 /* -------------------------- User Management -------------------------- */
-router.get("/get-all-users", getAllUsers);
+router.get("/get-all-users", cacheMiddleware(300), getAllUsers);
 router.post("/users/:usersid", deleteUser);
 
 /* ------------------------ Product Management ------------------------- */
@@ -63,6 +63,6 @@ router.get("/get-all-products", cacheMiddleware(5 * 60), getAllProducts);
 router.post("/products/:productid", deleteProduct);
 
 /* -------------------------- Dashboard Stats -------------------------- */
-router.get("/dashboard/stats", getDashboardStats);
+router.get("/dashboard/stats", cacheMiddleware(300),getDashboardStats);
 
 export default router;

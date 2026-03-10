@@ -1,5 +1,6 @@
 import userModel from "../models/usersModel.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import { clearCachePattern } from "../middleware/redisMiddleware.js";
 import { CustomError } from "../utils/customError.js";
 
 import bcrypt from "bcryptjs";
@@ -33,7 +34,7 @@ export const updateUsersDetails = asyncHandler(async (req, res) => {
     .populate("addresses");
 
   if (!updatedUser) throw new CustomError("User not found", 404);
-
+await clearCachePattern("/user-profile");
   res.status(200).json({
     message: "User details updated successfully",
     user: updatedUser,
@@ -74,7 +75,7 @@ export const deleteUserAccount = asyncHandler(async (req, res) => {
   await userModel.findByIdAndDelete(userId);
 
   res.clearCookie("token");
-
+await clearCachePattern("/user-profile");
   res.status(200).json({
     message: "Account deleted successfully",
   });

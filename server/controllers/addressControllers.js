@@ -1,4 +1,5 @@
 import userModel from "../models/usersModel.js";
+import { clearCachePattern } from "../middleware/redisMiddleware.js";
 import sellerModel from "../models/sellersModel.js";
 import adminModel from "../models/adminModel.js";
 import addressModel from "../models/addressModel.js";
@@ -48,6 +49,10 @@ export const addAddress = asyncHandler(async (req, res) => {
     });
   }
 
+  await clearCachePattern("/address/all");
+  await clearCachePattern("/single-address");
+  await clearCachePattern(`/${role}-profile`); // Dynamically clears /user-profile or /seller-profile
+
   res.status(201).json({
     message: `${role} address added successfully`,
     address: newAddress,
@@ -94,6 +99,11 @@ export const updateAddress = asyncHandler(async (req, res) => {
 
   if (!updatedAddress) throw new CustomError(`${role} address not found`, 404);
 
+
+  await clearCachePattern("/address/all");
+  await clearCachePattern("/single-address");
+  await clearCachePattern(`/${role}-profile`); // Dynamically clears /user-profile or /seller-profile
+
   res.status(200).json({
     message: `${role} address updated successfully`,
     address: updatedAddress,
@@ -124,6 +134,9 @@ export const deleteAddress = asyncHandler(async (req, res) => {
       $pull: { addresses: addressId },
     });
   }
+  await clearCachePattern("/address/all");
+  await clearCachePattern("/single-address");
+  await clearCachePattern(`/${role}-profile`); // Dynamically clears /user-profile or /seller-profile
 
   res.status(200).json({ message: `${role} address deleted successfully` });
 });

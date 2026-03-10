@@ -1,6 +1,7 @@
 import ratingModel from "../models/ratingModel.js";
 import productModel from "../models/productModel.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import { clearCachePattern } from "../middleware/redisMiddleware.js";
 import {CustomError} from "../utils/customError.js";
 
 /* ---------------------- Add or Update Rating ---------------------- */
@@ -43,6 +44,13 @@ export const addOrUpdateRating = asyncHandler(async (req, res) => {
   product.averageRating = averageRating.toFixed(1);
   product.totalRatings = totalRatings;
   await product.save();
+
+
+  await clearCachePattern(`/product-all-rating/${productId}`);
+  await clearCachePattern(`/product-rating/${productId}`);
+  await clearCachePattern("/products");
+  await clearCachePattern("/homepage-grouped");
+  await clearCachePattern("/top-category");
 
   res.status(200).json({
     status: 200,
@@ -115,6 +123,13 @@ export const deleteRating = asyncHandler(async (req, res) => {
     totalRatings,
   });
 
+
+  await clearCachePattern(`/product-all-rating/${productId}`);
+  await clearCachePattern(`/product-rating/${productId}`);
+  await clearCachePattern("/products");
+  await clearCachePattern("/homepage-grouped");
+  await clearCachePattern("/top-category");
+  
   res.status(200).json({
     status: 200,
     message: "Rating deleted successfully.",

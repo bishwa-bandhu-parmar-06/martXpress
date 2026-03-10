@@ -48,30 +48,29 @@ router.use(verifyToken, authorizeRoles("user"));
 router.post(
   "/add-rating",
   // ratingWriteLimiter,
-  addOrUpdateRating
+  addOrUpdateRating,
 );
 
 // Get all ratings for a product
 router.get(
   "/product-all-rating/:productId",
-  cacheMiddleware(5 * 60), 
-  // ratingReadLimiter,
-  getProductRatings
+  cacheMiddleware(300), // ratingReadLimiter,
+  getProductRatings,
 );
 
 // Get my rating
 router.get(
   "/product-rating/:productId",
   // ratingReadLimiter,
-    cacheMiddleware(5 * 60), 
-  getMyRating
+  cacheMiddleware(300),
+  getMyRating,
 );
 
 // Delete rating
 router.post(
   "/delete-rating/:productId",
   // ratingWriteLimiter,
-  deleteRating
+  deleteRating,
 );
 
 export default router;

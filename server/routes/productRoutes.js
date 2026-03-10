@@ -8,9 +8,10 @@ import {
   updateProduct,
   deleteProduct,
   getSingleProduct,
+  addBulkProducts,
 } from "../controllers/productControllers.js";
 
-import { upload } from "../uploads/multer.js";
+import { upload, uploadExcel } from "../uploads/multer.js";
 import { verifyToken } from "../middleware/authMiddleware.js";
 import redisClient from "../config/redisClient.js";
 import { cacheMiddleware } from "../middleware/redisMiddleware.js";
@@ -73,28 +74,28 @@ const readProductLimiter = rateLimit({
 router.use(verifyToken);
 
 // Add product
-router.post("/add", cacheMiddleware(600), upload.array("images", 5), addProduct);
+router.post("/add", upload.array("images", 5), addProduct);
 
 // Seller products
 router.get(
   "/my-products",
-  // readProductLimiter,
-  cacheMiddleware(600), 
+  cacheMiddleware(300),
   getAllProductsAddedByLoggedInSeller,
 );
 
 // Single product
-router.get("/:productId", cacheMiddleware(600), getSingleProduct);
+router.get("/:productId", cacheMiddleware(300), getSingleProduct);
 
 // Update product
 router.post(
   "/update/:productId",
   // updateProductLimiter,
-  cacheMiddleware(600),
+  // cacheMiddleware(600),
   upload.array("images", 5),
   updateProduct,
 );
 
+router.post("/bulk-add", uploadExcel.single("file"), addBulkProducts);
 // Delete product
 router.post("/delete/:productId", deleteProduct);
 

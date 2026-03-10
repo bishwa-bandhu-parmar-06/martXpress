@@ -2,7 +2,10 @@ import productModel from "../models/productModel.js";
 import sellerModel from "../models/sellersModel.js";
 import { PRODUCT_CATEGORIES } from "../config/constants.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
-import {CustomError} from "../utils/customError.js";
+import { CustomError } from "../utils/customError.js";
+import { clearCachePattern } from "../middleware/redisMiddleware.js";
+import xlsx from "xlsx";
+import fs from "fs";
 
 /**
  * 🛒 Add new product (Seller only)
@@ -50,7 +53,15 @@ export const addProduct = asyncHandler(async (req, res) => {
     images: imagePaths,
     tags,
   });
-
+  // --- CLEAR CACHE ---
+  await clearCachePattern("/products");
+  await clearCachePattern("/categories");
+  await clearCachePattern("/brands");
+  await clearCachePattern("/homepage-grouped");
+  await clearCachePattern("/hero-slider");
+  await clearCachePattern("/top-category");
+  await clearCachePattern("/search");
+  await clearCachePattern("/dashboard/stats");
   return res.status(201).json({
     status: 201,
     message: "Product added successfully.",
@@ -160,7 +171,15 @@ export const updateProduct = asyncHandler(async (req, res) => {
     { $set: updateData },
     { new: true, runValidators: true },
   );
-
+  // --- CLEAR CACHE ---
+  await clearCachePattern("/products");
+  await clearCachePattern("/categories");
+  await clearCachePattern("/brands");
+  await clearCachePattern("/homepage-grouped");
+  await clearCachePattern("/hero-slider");
+  await clearCachePattern("/top-category");
+  await clearCachePattern("/search");
+  await clearCachePattern("/dashboard/stats");
   return res.status(200).json({
     status: 200,
     message: "Product updated successfully.",
@@ -181,7 +200,15 @@ export const deleteProduct = asyncHandler(async (req, res) => {
   }
 
   await productModel.findByIdAndDelete(productId);
-
+  // --- CLEAR CACHE ---
+  await clearCachePattern("/products");
+  await clearCachePattern("/categories");
+  await clearCachePattern("/brands");
+  await clearCachePattern("/homepage-grouped");
+  await clearCachePattern("/hero-slider");
+  await clearCachePattern("/top-category");
+  await clearCachePattern("/search");
+  await clearCachePattern("/dashboard/stats");
   return res.status(200).json({
     status: 200,
     message: "🗑️ Product deleted successfully.",
@@ -208,4 +235,117 @@ export const getSingleProduct = asyncHandler(async (req, res) => {
     message: "Product fetched successfully.",
     product,
   });
+});
+
+/**
+ * 📦 Bulk Add Products via Excel (Seller only)
+ */
+export const addBulkProducts = asyncHandler(async (req, res) => {
+  const sellerId = req.user.sub || req.user.id;
+
+  if (!req.file) {
+    throw new CustomError("Please upload an Excel or CSV file.", 400);
+  }
+
+  try {
+    // 1. Read the uploaded Excel file
+    const workbook = xlsx.readFile(req.file.path);
+    const sheetName = workbook.SheetNames[0];
+    const sheetData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+    if (sheetData.length === 0) {
+      throw new CustomError("The uploaded file is empty.", 400);
+    }
+
+    const productsToInsert = [];
+    const errors = [];
+
+    // 2. Process and map each row to your schema
+    sheetData.forEach((row, index) => {
+      // Validate strictly required fields
+      if (!row.Name || !row.Price || !row.Category) {
+        errors.push(`Row ${index + 2}: Missing Name, Price, or Category.`);
+        return;
+      }
+
+      if (!PRODUCT_CATEGORIES.includes(row.Category)) {
+        errors.push(`Row ${index + 2}: Invalid Category '${row.Category}'.`);
+        return;
+      }
+
+      // Parse arrays safely
+      const tagsArray = row.Tags
+        ? String(row.Tags)
+            .split(",")
+            .map((t) => t.trim())
+            .filter(Boolean)
+        : [];
+      const imagesArray = row.ImageURLs
+        ? String(row.ImageURLs)
+            .split(",")
+            .map((i) => i.trim())
+            .filter(Boolean)
+        : [];
+
+      // Safely parse status to match your enum
+      let parsedStatus = "active";
+      if (row.Status) {
+        const s = String(row.Status).toLowerCase();
+        if (["active", "inactive", "out of stock"].includes(s)) {
+          parsedStatus = s;
+        }
+      }
+
+      productsToInsert.push({
+        sellerId,
+        name: String(row.Name),
+        description: row.Description
+          ? String(row.Description)
+          : "No description provided.",
+        category: String(row.Category),
+        brand: row.Brand ? String(row.Brand) : "",
+        price: Number(row.Price),
+        discount: Number(row.Discount) || 0,
+        stock: Number(row.Stock) || 0,
+        tags: tagsArray,
+        images: imagesArray,
+        status: parsedStatus,
+        featured: String(row.Featured).toLowerCase() === "true",
+      });
+    });
+
+    if (productsToInsert.length === 0) {
+      throw new CustomError(
+        `No valid products found. Errors: ${errors.join(" | ")}`,
+        400,
+      );
+    }
+
+    await productModel.create(productsToInsert);
+
+    fs.unlinkSync(req.file.path);
+    // --- CLEAR CACHE ---
+    await clearCachePattern("/products");
+    await clearCachePattern("/categories");
+    await clearCachePattern("/brands");
+    await clearCachePattern("/homepage-grouped");
+    await clearCachePattern("/hero-slider");
+    await clearCachePattern("/top-category");
+    await clearCachePattern("/search");
+    await clearCachePattern("/dashboard/stats");
+    return res.status(201).json({
+      status: 201,
+      message: `Successfully added ${productsToInsert.length} products.`,
+      errors: errors.length > 0 ? errors : undefined,
+    });
+  } catch (error) {
+    // Ensure file is deleted if something crashes
+    if (req.file && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+    throw new CustomError(
+      error.message || "Failed to process Excel file.",
+      500,
+    );
+  }
 });

@@ -6,6 +6,7 @@ import bcrypt from "bcryptjs";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { CustomError } from "../utils/customError.js";
 import redisClient from "../config/redisClient.js";
+import { clearCachePattern } from "../middleware/redisMiddleware.js";
 
 /* ---------------------------- GET ADMIN PROFILE ---------------------------- */
 export const getAdminProfile = asyncHandler(async (req, res) => {
@@ -43,6 +44,8 @@ export const updateAdminDetails = asyncHandler(async (req, res) => {
   if (!updatedAdmin) {
     throw new CustomError("Admin not found", 404);
   }
+
+  await clearCachePattern("/admin/profile");
 
   res.status(200).json({
     status: 200,
@@ -123,7 +126,8 @@ export const approveSeller = asyncHandler(async (req, res) => {
   );
 
   if (!seller) throw new CustomError("Seller not found", 404);
-
+  await clearCachePattern("/sellers");
+  await clearCachePattern("/dashboard/stats");
   res.status(200).json({
     status: 200,
     message: "Seller approved successfully",
@@ -140,7 +144,8 @@ export const rejectSeller = asyncHandler(async (req, res) => {
   );
 
   if (!seller) throw new CustomError("Seller not found", 404);
-
+  await clearCachePattern("/sellers");
+  await clearCachePattern("/dashboard/stats");
   res.status(200).json({
     status: 200,
     message: "Seller rejected successfully",
@@ -153,7 +158,8 @@ export const deleteSeller = asyncHandler(async (req, res) => {
   const deleted = await sellerModel.findByIdAndDelete(sellerid);
 
   if (!deleted) throw new CustomError("Seller not found", 404);
-
+  await clearCachePattern("/sellers");
+  await clearCachePattern("/dashboard/stats");
   res.status(200).json({
     status: 200,
     message: "Seller deleted successfully",
@@ -175,6 +181,9 @@ export const deleteUser = asyncHandler(async (req, res) => {
   const deleted = await userModel.findByIdAndDelete(req.params.id);
 
   if (!deleted) throw new CustomError("User not found", 404);
+
+  await clearCachePattern("/get-all-users");
+  await clearCachePattern("/dashboard/stats");
 
   res.status(200).json({
     status: 200,
@@ -208,17 +217,9 @@ export const deleteProduct = asyncHandler(async (req, res) => {
 
   if (!deleted) throw new CustomError("Product not found", 404);
 
-  //  THE FIX: Invalidate Redis Cache
-  try {
-    // Find all cache keys related to admin products and dashboard stats
-    const productKeys = await redisClient.keys("cache:*/api/admin/get-all-products*");
-    const statKeys = await redisClient.keys("cache:*/api/admin/dashboard/stats*");
-    
-    if (productKeys.length > 0) await redisClient.del(productKeys);
-    if (statKeys.length > 0) await redisClient.del(statKeys);
-  } catch (err) {
-    console.error("Redis Cache Invalidation Failed:", err);
-  }
+  await clearCachePattern("/products");
+  await clearCachePattern("/categories");
+  await clearCachePattern("/dashboard/stats");
 
   res.status(200).json({
     status: 200,
