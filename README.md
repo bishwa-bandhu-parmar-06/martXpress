@@ -302,7 +302,7 @@ To contribute:
 **Bishwa Bandhu Parmar**
 
 GitHub:
-https://github.com/yourusername
+https://github.com/bishwa-bandhu-parmar-06
 
 ---
 
