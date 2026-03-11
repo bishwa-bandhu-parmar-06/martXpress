@@ -4,7 +4,7 @@ import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useLocation } from "react-router-dom";
-
+import { RatingsTab } from "./RatingsTab";
 // API & Redux
 import {
   getUserProfile,
@@ -282,7 +282,7 @@ const UsersDashBoard = () => {
               )}
 
               {activeTab === "orders" && <OrdersTab />}
-
+              {activeTab === "ratings" && <RatingsTab />}
               {activeTab === "settings" && (
                 <SettingsTab
                   profileData={profileData}

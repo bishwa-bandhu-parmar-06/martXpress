@@ -1,11 +1,12 @@
 import React from "react";
-import { User, MapPin, Package, Settings, LogOut } from "lucide-react";
+import { User, MapPin, Package, Settings, LogOut, Star } from "lucide-react";
 
 export const DashboardSidebar = ({ activeTab, setActiveTab, onLogout }) => {
   const tabs = [
     { id: "profile", label: "My Profile", icon: User },
     { id: "addresses", label: "Addresses", icon: MapPin },
     { id: "orders", label: "My Orders", icon: Package },
+    { id: "ratings", label: "My Reviews", icon: Star },
     { id: "settings", label: "Settings", icon: Settings },
   ];
 

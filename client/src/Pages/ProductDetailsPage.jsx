@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux"; // <-- Ensure useSelector is imported
+import { useDispatch, useSelector } from "react-redux";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { addRatings, getMyRating, getAllRatings } from "../API/users/ratingApi";
+import { MessageSquare } from "lucide-react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -44,7 +46,6 @@ const ProductDetailsPage = () => {
   const wishlistedIds = useSelector((state) => state.wishlist.wishlistItems);
   const { isAuthenticated, user } = useSelector((state) => state.auth); // Pull auth state
 
-  // --- LOCAL STATE ---
   const [isInCart, setIsInCart] = useState(false);
   const [product, setProduct] = useState(null);
   const [selectedImage, setSelectedImage] = useState(0);
@@ -54,6 +55,13 @@ const ProductDetailsPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [addingToCart, setAddingToCart] = useState(false);
+
+  // Rating states
+  const [userRating, setUserRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [reviewText, setReviewText] = useState("");
+  const [submittingRating, setSubmittingRating] = useState(false);
+  const [allProductRatings, setAllProductRatings] = useState([]);
 
   // Derive wishlist status from global Redux state
   const isCurrentlyWishlisted = wishlistedIds.includes(productId);
@@ -66,7 +74,6 @@ const ProductDetailsPage = () => {
       try {
         const [prodRes, cartRes] = await Promise.all([
           getSingleProductDetails(productId),
-          // Only attempt to fetch cart if they are logged in as a user
           isAuthenticated && user?.role === "user"
             ? getCart()
             : Promise.resolve(null),
@@ -78,12 +85,21 @@ const ProductDetailsPage = () => {
           setSelectedColor(productData.colors?.[0] || "#000000");
           setSelectedSize(productData.sizes?.[0] || "Standard");
 
-          // Check if item is already in cart
           if (cartRes?.success) {
             const itemExists = cartRes.cart.items.some(
               (item) => item.productId === productId,
             );
             setIsInCart(itemExists);
+          }
+
+          // Fetch all public ratings for this product
+          try {
+            const ratingsRes = await getAllRatings(productId);
+            if (ratingsRes?.ratings) {
+              setAllProductRatings(ratingsRes.ratings);
+            }
+          } catch (ratingError) {
+            console.error("Failed to load ratings:", ratingError);
           }
         } else {
           setError("Product not found");
@@ -97,28 +113,42 @@ const ProductDetailsPage = () => {
     fetchProductData();
   }, [productId, isAuthenticated, user]);
 
-  // --- INTERCEPTOR LOGIC ---
   const checkAuthAndRole = () => {
     if (!isAuthenticated) {
       toast.error("Please login to perform this action.");
-      // Pass the current location so they can redirect back here after login
       navigate("/users/auth", { state: { from: location.pathname } });
       return false;
     }
 
     if (user?.role !== "user") {
       toast.error(
-        `As a ${user.role}, you cannot purchase items. Please use a buyer account.`,
+        `As a ${user.role}, you cannot perform this action. Please use a buyer account.`,
       );
       return false;
     }
 
-    return true; // Passed all checks!
+    return true;
   };
 
-  // --- HANDLERS ---
+  useEffect(() => {
+    const fetchUserRating = async () => {
+      if (isAuthenticated && user?.role === "user") {
+        try {
+          const res = await getMyRating(productId);
+          if (res?.rating) {
+            setUserRating(res.rating.rating);
+            setReviewText(res.rating.review || "");
+          }
+        } catch (error) {
+          console.error("Failed to fetch user rating", error);
+        }
+      }
+    };
+    fetchUserRating();
+  }, [productId, isAuthenticated, user]);
+
   const handleAddToCart = async () => {
-    if (!checkAuthAndRole()) return; // INTERCEPTED
+    if (!checkAuthAndRole()) return;
     if (!product || product.stock <= 0) return;
 
     if (isInCart) {
@@ -182,6 +212,47 @@ const ProductDetailsPage = () => {
         ],
       },
     });
+  };
+
+  // Submit Rating Handler
+  const handleRatingSubmit = async () => {
+    // 1. INTERCEPT: Check if logged in and if role is "user"
+    if (!checkAuthAndRole()) return;
+
+    // 2. Validate input
+    if (userRating === 0) {
+      return toast.error("Please select a star rating first.");
+    }
+
+    try {
+      setSubmittingRating(true);
+      const response = await addRatings({
+        productId,
+        rating: userRating,
+        review: reviewText,
+      });
+
+      if (response?.status === 200) {
+        toast.success("Thank you! Your rating has been submitted.");
+
+        // Update the local product state to reflect the new average rating
+        setProduct((prev) => ({
+          ...prev,
+          averageRating: response.averageRating,
+          totalRatings: response.totalRatings,
+        }));
+
+        // Refresh all ratings to show the newly added one
+        const updatedRatingsRes = await getAllRatings(productId);
+        if (updatedRatingsRes?.ratings) {
+          setAllProductRatings(updatedRatingsRes.ratings);
+        }
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to submit rating.");
+    } finally {
+      setSubmittingRating(false);
+    }
   };
 
   // Helper functions (Safe data handling)
@@ -492,6 +563,150 @@ const ProductDetailsPage = () => {
         >
           Buy Now
         </button>
+      </div>
+
+      {/* --- FULL WIDTH REVIEWS SECTION (FIXED PLACEMENT) --- */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 pt-8 border-t border-gray-200 dark:border-gray-800">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+          {/* Left Side: Rating Form */}
+          <div className="lg:col-span-1">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+              <MessageSquare size={22} className="text-primary" />
+              {userRating > 0 ? "Update Your Review" : "Rate This Product"}
+            </h3>
+
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm sticky top-24">
+              <div className="flex items-center gap-2 mb-4">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => {
+                      if (checkAuthAndRole()) setUserRating(star);
+                    }}
+                    onMouseEnter={() => setHoverRating(star)}
+                    onMouseLeave={() => setHoverRating(0)}
+                    className="transition-transform hover:scale-110 focus:outline-none"
+                  >
+                    <Star
+                      size={28}
+                      fill={
+                        (hoverRating || userRating) >= star ? "#fbbf24" : "none"
+                      }
+                      className={
+                        (hoverRating || userRating) >= star
+                          ? "text-yellow-400"
+                          : "text-gray-300 dark:text-gray-600"
+                      }
+                    />
+                  </button>
+                ))}
+              </div>
+
+              <textarea
+                value={reviewText}
+                onChange={(e) => setReviewText(e.target.value)}
+                onClick={() => checkAuthAndRole()}
+                placeholder="Write your review here (optional)..."
+                rows={4}
+                className="w-full p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl mb-4 focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none text-gray-900 dark:text-white resize-none transition-all"
+              />
+
+              <button
+                onClick={handleRatingSubmit}
+                disabled={submittingRating || userRating === 0}
+                className="w-full bg-primary text-white py-3 rounded-xl font-bold shadow-md hover:bg-primary/90 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {submittingRating && (
+                  <Loader2 size={16} className="animate-spin" />
+                )}
+                Submit Review
+              </button>
+            </div>
+          </div>
+
+          {/* Right Side: Display All Reviews */}
+          <div className="lg:col-span-2 space-y-6">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
+              Customer Reviews ({allProductRatings.length})
+            </h3>
+
+            {allProductRatings.length === 0 ? (
+              <div className="text-center py-12 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700">
+                <p className="text-gray-500 dark:text-gray-400">
+                  No reviews yet. Be the first to rate this product!
+                </p>
+              </div>
+            ) : (
+              allProductRatings.map((rating) => (
+                <div
+                  key={rating._id}
+                  className="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-primary/10 text-primary rounded-full flex items-center justify-center font-bold text-lg uppercase">
+                        {rating.userId?.name?.[0] || "U"}
+                      </div>
+                      <div>
+                        <p className="font-bold text-gray-900 dark:text-white text-sm">
+                          {rating.userId?.name || "Anonymous User"}
+                        </p>
+                        <div className="flex text-yellow-400 mt-0.5">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              size={14}
+                              fill={i < rating.rating ? "#fbbf24" : "none"}
+                              className={
+                                i < rating.rating
+                                  ? "text-yellow-400"
+                                  : "text-gray-300"
+                              }
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    <span className="text-xs text-gray-400">
+                      {new Date(rating.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+
+                  {/* Public vs Private Review Text Logic */}
+                  {rating.review && (
+                    <div className="mt-3 relative">
+                      {isAuthenticated ? (
+                        <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
+                          {rating.review}
+                        </p>
+                      ) : (
+                        <div className="relative overflow-hidden rounded-lg">
+                          <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed blur-xs select-none">
+                            {rating.review} This text is blurred out to protect
+                            user privacy. Please login to read full reviews.
+                          </p>
+                          <div className="absolute inset-0 bg-white/40 dark:bg-gray-900/40 flex items-center justify-center">
+                            <button
+                              onClick={() =>
+                                navigate("/users/auth", {
+                                  state: { from: location.pathname },
+                                })
+                              }
+                              className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white px-4 py-2 rounded-lg font-bold shadow-md border border-gray-200 dark:border-gray-700 text-xs hover:bg-gray-50 transition-colors"
+                            >
+                              Login to read review
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

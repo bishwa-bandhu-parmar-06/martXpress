@@ -135,3 +135,20 @@ export const deleteRating = asyncHandler(async (req, res) => {
     message: "Rating deleted successfully.",
   });
 });
+
+
+// Add to ratingControllers.js
+export const getMyAllRatings = asyncHandler(async (req, res) => {
+  const userId = req.user.sub || req.user.id;
+  const ratings = await ratingModel
+    .find({ userId })
+    .populate("productId", "name images price")
+    .sort({ createdAt: -1 });
+
+  res.status(200).json({
+    status: 200,
+    count: ratings.length,
+    ratings,
+  });
+});
+

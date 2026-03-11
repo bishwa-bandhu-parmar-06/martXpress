@@ -8,6 +8,7 @@ import {
   getProductRatings,
   getMyRating,
   deleteRating,
+  getMyAllRatings,
 } from "../controllers/ratingControllers.js";
 
 import redisClient from "../config/redisClient.js";
@@ -71,6 +72,15 @@ router.post(
   "/delete-rating/:productId",
   // ratingWriteLimiter,
   deleteRating,
+);
+
+// Add to ratingRoutes.js
+router.get(
+  "/my-ratings",
+  cacheMiddleware(300),
+  verifyToken,
+  authorizeRoles("user"),
+  getMyAllRatings,
 );
 
 export default router;
