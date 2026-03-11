@@ -1,261 +1,798 @@
-import { useDispatch, useSelector } from "react-redux"; // Added useSelector
-import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import React, { useEffect, useState, useRef } from "react";
 import {
-  ArrowRight,
+  ArrowUpRight,
   ChevronLeft,
   ChevronRight,
   Share2,
   ShoppingBag,
   Zap,
   Heart,
+  Star,
+  Package,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { toCategorySlug } from "../../utils/categorySlug";
 import { addProductToCart } from "../../API/Cart/getAllCartProductApi.js";
 import { setCartQuantity } from "../../Features/Cart/CartSlice.js";
-import { 
-  addProductToWishList, 
-  removeASingleWishlistProduct 
-} from "../../API/Cart/wishListApi.js"; // Import remove function
-import { 
-  addToWishlistRedux, 
-  removeFromWishlistRedux 
-} from "../../Features/Cart/WishlistSlice"; // Import Redux actions
+import {
+  addProductToWishList,
+  removeASingleWishlistProduct,
+} from "../../API/Cart/wishListApi.js";
+import {
+  addToWishlistRedux,
+  removeFromWishlistRedux,
+} from "../../Features/Cart/WishlistSlice";
 
-const CATEGORY_STYLE_MAP = {
+/* ─── inject styles once ─────────────────────────────────────────── */
+const STYLES = `
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+  .cp-root { font-family: 'DM Sans', sans-serif; }
+  .cp-root * { box-sizing: border-box; }
+
+  .cp-card {
+    background: #ffffff;
+    border-radius: 20px;
+    overflow: hidden;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    border: 1.5px solid #F0F4F8;
+    box-shadow: 0 1px 4px rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.04);
+    transform: translateY(0) scale(1);
+    transition: transform 0.38s cubic-bezier(.34,1.56,.64,1),
+                box-shadow 0.38s ease,
+                border-color 0.2s ease;
+    position: relative;
+    height: 100%;
+  }
+  .cp-card:hover {
+    transform: translateY(-7px) scale(1.018);
+  }
+
+  .dark .cp-card {
+    background: #1E2533;
+    border-color: #2A3347;
+    box-shadow: 0 2px 8px rgba(0,0,0,.25), 0 8px 32px rgba(0,0,0,.2);
+  }
+
+  .cp-img-wrap {
+    position: relative;
+    aspect-ratio: 1/1;
+    background: #F8FAFC;
+    overflow: hidden;
+    transition: background .3s;
+  }
+  .dark .cp-img-wrap { background: #151C28; }
+
+  .cp-card:hover .cp-img-wrap { background: #F1F7FF; }
+  .dark .cp-card:hover .cp-img-wrap { background: #1A2235; }
+
+  .cp-img {
+    width: 100%; height: 100%;
+    object-fit: contain; padding: 12px;
+    transform: scale(1);
+    transition: transform 0.5s cubic-bezier(.34,1.56,.64,1);
+  }
+  .cp-card:hover .cp-img { transform: scale(1.1); }
+
+  .cp-actions {
+    position: absolute; top: 10px; right: 10px;
+    display: flex; flex-direction: column; gap: 6px;
+    opacity: 0; transform: translateX(6px);
+    transition: all .3s ease;
+  }
+  .cp-card:hover .cp-actions { opacity: 1; transform: translateX(0); }
+
+  .cp-action-btn {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: rgba(255,255,255,.92);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(0,0,0,.06);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,.12);
+    transition: transform .2s, background .2s;
+  }
+  .cp-action-btn:hover { transform: scale(1.12); }
+  .dark .cp-action-btn { background: rgba(30,37,51,.9); border-color: rgba(255,255,255,.1); }
+
+  .cp-nav-btn {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    z-index: 10; width: 42px; height: 42px; border-radius: 50%;
+    background: #fff; border: 1.5px solid transparent;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(0,0,0,.1), 0 2px 8px rgba(0,0,0,.06);
+    transition: all .25s cubic-bezier(.34,1.56,.64,1);
+  }
+  .cp-nav-btn:hover { transform: translateY(-50%) scale(1.1); }
+  .dark .cp-nav-btn { background: #1E2533; }
+
+  .cp-dot {
+    height: 7px; border-radius: 4px; border: none; cursor: pointer; padding: 0;
+    transition: all .4s cubic-bezier(.34,1.56,.64,1);
+  }
+
+  .cp-cta-cart {
+    flex: 1; padding: 8px 0; border-radius: 10px;
+    font-size: 11px; font-weight: 700; letter-spacing: .04em;
+    display: flex; align-items: center; justify-content: center; gap: 4px;
+    transition: all .2s; cursor: pointer; border: 1.5px solid transparent;
+  }
+  .cp-cta-buy {
+    flex: 1; padding: 8px 0; border-radius: 10px; border: none;
+    font-size: 11px; font-weight: 700; letter-spacing: .04em; color: #fff;
+    display: flex; align-items: center; justify-content: center; gap: 4px;
+    transition: all .2s; cursor: pointer;
+  }
+
+  .cp-viewall-btn {
+    display: flex; align-items: center; gap: 6px;
+    padding: 9px 18px; border-radius: 12px; font-size: 13px; font-weight: 600;
+    background: rgba(255,255,255,.15); border: 1.5px solid rgba(255,255,255,.3);
+    color: #fff; cursor: pointer; backdrop-filter: blur(8px);
+    transition: background .2s, transform .2s;
+    flex-shrink: 0; z-index: 1;
+  }
+  .cp-viewall-btn:hover { background: rgba(255,255,255,.28); transform: translateY(-1px); }
+`;
+
+let stylesInjected = false;
+const injectStyles = () => {
+  if (stylesInjected || typeof document === "undefined") return;
+  const tag = document.createElement("style");
+  tag.textContent = STYLES;
+  document.head.appendChild(tag);
+  stylesInjected = true;
+};
+
+/* ─── category config ────────────────────────────────────────────── */
+const CATS = {
   Fashion: {
     icon: "👗",
-    color: "from-pink-500 to-rose-500",
-    bgColor: "from-pink-50 to-rose-50 dark:from-pink-900/20 dark:to-rose-900/20",
+    accent: "#F43F5E",
+    dark: "#881337",
+    badge: "Trending",
+    line: "Dress your best self",
   },
   Electronics: {
     icon: "💻",
-    color: "from-blue-500 to-indigo-500",
-    bgColor: "from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20",
+    accent: "#3B82F6",
+    dark: "#1E3A5F",
+    badge: "New Arrivals",
+    line: "Power your world",
   },
   "TV & Appliances": {
     icon: "📺",
-    color: "from-purple-500 to-violet-500",
-    bgColor: "from-purple-50 to-violet-50 dark:from-purple-900/20 dark:to-violet-900/20",
+    accent: "#8B5CF6",
+    dark: "#2E1065",
+    badge: "Best Sellers",
+    line: "Upgrade your home",
   },
   "Mobiles & Tablets": {
     icon: "📱",
-    color: "from-cyan-500 to-blue-500",
-    bgColor: "from-cyan-50 to-blue-50 dark:from-cyan-900/20 dark:to-blue-900/20",
+    accent: "#06B6D4",
+    dark: "#0C4A6E",
+    badge: "Hot Deals",
+    line: "Stay always connected",
   },
   "Home & Furniture": {
     icon: "🏠",
-    color: "from-emerald-500 to-teal-500",
-    bgColor: "from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20",
+    accent: "#10B981",
+    dark: "#064E3B",
+    badge: "Featured",
+    line: "Craft your sanctuary",
   },
   "Beauty & Personal Care": {
     icon: "💄",
-    color: "from-rose-500 to-pink-500",
-    bgColor: "from-rose-50 to-pink-50 dark:from-rose-900/20 dark:to-pink-900/20",
+    accent: "#EC4899",
+    dark: "#500724",
+    badge: "Top Rated",
+    line: "Glow from within",
   },
   Grocery: {
     icon: "🛒",
-    color: "from-green-500 to-emerald-500",
-    bgColor: "from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20",
+    accent: "#22C55E",
+    dark: "#14532D",
+    badge: "Fresh Picks",
+    line: "Farm fresh everyday",
   },
 };
+const DFLT = {
+  icon: "📦",
+  accent: "#64748B",
+  dark: "#0F172A",
+  badge: "Popular",
+  line: "Explore more",
+};
 
-const CategoryProducts = ({ categoryName, dbProducts = [], totalCount = 0 }) => {
+/* ─── mini star row ─────────────────────────────────────────────── */
+const Stars = ({ r = 0, n = 0 }) => (
+  <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+    <div style={{ display: "flex", gap: 1 }}>
+      {[1, 2, 3, 4, 5].map((i) => (
+        <Star
+          key={i}
+          size={10}
+          style={{
+            fill: i <= Math.round(r) ? "#FBBF24" : "none",
+            color: i <= Math.round(r) ? "#FBBF24" : "#D1D5DB",
+          }}
+        />
+      ))}
+    </div>
+    <span style={{ fontSize: 11, color: "#94A3B8" }}>({n})</span>
+  </div>
+);
+
+/* ─── discount pill ─────────────────────────────────────────────── */
+const DiscBadge = ({ p }) => {
+  const pct =
+    p.price && p.finalPrice
+      ? Math.round(((p.price - p.finalPrice) / p.price) * 100)
+      : 0;
+  if (pct <= 0) return null;
+  return (
+    <div
+      style={{
+        position: "absolute",
+        top: 10,
+        left: 10,
+        background: "linear-gradient(135deg,#EF4444,#F97316)",
+        color: "#fff",
+        fontSize: 10,
+        fontWeight: 700,
+        padding: "2px 8px",
+        borderRadius: 20,
+        zIndex: 3,
+        boxShadow: "0 2px 8px rgba(239,68,68,.4)",
+        letterSpacing: ".04em",
+      }}
+    >
+      -{pct}%
+    </div>
+  );
+};
+
+/* ─── product card ──────────────────────────────────────────────── */
+const Card = ({
+  product: p,
+  accent,
+  isW,
+  isAdding,
+  onCard,
+  onCart,
+  onBuy,
+  onWish,
+  onShare,
+}) => {
+  const [imgErr, setImgErr] = useState(false);
+  const [hov, setHov] = useState(false);
+
+  return (
+    <div
+      className="cp-card"
+      onClick={() => onCard(p)}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        borderColor: hov ? accent + "50" : undefined,
+        boxShadow: hov
+          ? `0 20px 50px -8px ${accent}28, 0 4px 16px rgba(0,0,0,.07)`
+          : undefined,
+      }}
+    >
+      <div className="cp-img-wrap">
+        <DiscBadge p={p} />
+        {imgErr ? (
+          <div
+            style={{
+              width: "100%",
+              height: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#CBD5E1",
+            }}
+          >
+            <Package size={36} />
+          </div>
+        ) : (
+          <img
+            className="cp-img"
+            src={p.images?.[0]}
+            alt={p.name}
+            onError={() => setImgErr(true)}
+          />
+        )}
+
+        {/* action buttons */}
+        <div className="cp-actions">
+          <button className="cp-action-btn" onClick={(e) => onWish(e, p._id)}>
+            <Heart
+              size={13}
+              fill={isW ? "#EF4444" : "none"}
+              color={isW ? "#EF4444" : "#64748B"}
+            />
+          </button>
+          <button className="cp-action-btn" onClick={(e) => onShare(e, p)}>
+            <Share2 size={13} color="#64748B" />
+          </button>
+        </div>
+      </div>
+
+      <div
+        style={{
+          padding: "12px 14px 14px",
+          display: "flex",
+          flexDirection: "column",
+          flex: 1,
+        }}
+      >
+        <p
+          style={{
+            margin: "0 0 6px",
+            fontSize: 12,
+            fontWeight: 500,
+            lineHeight: 1.45,
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden",
+            minHeight: 34,
+            color: "var(--cp-text, #374151)",
+          }}
+        >
+          {p.name}
+        </p>
+
+        <Stars r={p.averageRating || 0} n={p.totalRatings || 0} />
+
+        <div style={{ margin: "8px 0 10px" }}>
+          <span
+            style={{
+              fontSize: 17,
+              fontWeight: 800,
+              letterSpacing: "-0.02em",
+              color: "var(--cp-heading, #0F172A)",
+            }}
+          >
+            ₹{(p.finalPrice || p.price || 0).toLocaleString()}
+          </span>
+          {p.price && p.finalPrice && p.price !== p.finalPrice && (
+            <span
+              style={{
+                fontSize: 11,
+                color: "#94A3B8",
+                textDecoration: "line-through",
+                marginLeft: 5,
+              }}
+            >
+              ₹{p.price.toLocaleString()}
+            </span>
+          )}
+        </div>
+
+        <div style={{ display: "flex", gap: 6, marginTop: "auto" }}>
+          <button
+            className="cp-cta-cart"
+            onClick={(e) => onCart(e, p)}
+            disabled={isAdding || p.stock <= 0}
+            style={{
+              borderColor: p.stock <= 0 ? "#E2E8F0" : accent + "33",
+              background:
+                hov && p.stock > 0
+                  ? accent + "0D"
+                  : typeof document !== "undefined" &&
+                      document.documentElement.classList.contains("dark")
+                    ? "#2A3347"
+                    : "#F8FAFC",
+              color: p.stock <= 0 ? "#94A3B8" : accent,
+              cursor: p.stock <= 0 ? "not-allowed" : "pointer",
+            }}
+          >
+            <ShoppingBag size={12} />
+            {isAdding
+              ? "Adding…"
+              : p.stock <= 0
+                ? "Out of Stock"
+                : "Add to Cart"}
+          </button>
+          <button
+            className="cp-cta-buy"
+            onClick={(e) => onBuy(e, p)}
+            disabled={p.stock <= 0}
+            style={{
+              background:
+                p.stock <= 0
+                  ? "#E2E8F0"
+                  : `linear-gradient(135deg, ${accent}, ${accent}CC)`,
+              color: p.stock <= 0 ? "#94A3B8" : "#fff",
+              cursor: p.stock <= 0 ? "not-allowed" : "pointer",
+              boxShadow: p.stock > 0 ? `0 4px 12px ${accent}44` : "none",
+            }}
+          >
+            <Zap size={12} /> Buy Now
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ─── main component ─────────────────────────────────────────────── */
+const CategoryProducts = ({
+  categoryName,
+  dbProducts = [],
+  totalCount = 0,
+}) => {
+  injectStyles();
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const wishIds = useSelector((s) => s.wishlist.wishlistItems);
 
-  // Get wishlisted IDs from Redux for global consistency
-  const wishlistedIds = useSelector((state) => state.wishlist.wishlistItems);
+  const [idx, setIdx] = useState(0);
+  const [ipv, setIpv] = useState(5);
+  const [adding, setAdding] = useState({});
+  const [busy, setBusy] = useState(false);
 
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isTransitioning, setIsTransitioning] = useState(false);
-  const [itemsPerView, setItemsPerView] = useState(6);
-  const [addingToCart, setAddingToCart] = useState({});
+  const cat = categoryName || "Fashion";
+  const s = CATS[cat] || DFLT;
+  const { accent, dark: darkHex, icon, badge, line } = s;
 
   useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth < 640) setItemsPerView(2);
-      else if (window.innerWidth < 1024) setItemsPerView(3);
-      else if (window.innerWidth < 1280) setItemsPerView(4);
-      else setItemsPerView(6);
+    const upd = () => {
+      const w = window.innerWidth;
+      if (w < 480) setIpv(1.5);
+      else if (w < 640) setIpv(2.3);
+      else if (w < 900) setIpv(3);
+      else if (w < 1200) setIpv(4);
+      else setIpv(5);
     };
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    upd();
+    window.addEventListener("resize", upd);
+    return () => window.removeEventListener("resize", upd);
   }, []);
 
-  const safeCategoryName = categoryName || "Fashion";
-  const style = CATEGORY_STYLE_MAP[safeCategoryName] || {
-    icon: "📦",
-    color: "from-gray-500 to-slate-500",
-    bgColor: "bg-gray-100 dark:bg-gray-800",
-  };
-
   const products = dbProducts;
-  const totalSlides = products.length > itemsPerView ? products.length - itemsPerView + 2 : 1;
-  const canSlide = products.length > itemsPerView;
-  const colorClass = style.color.replace("linear", "gradient");
+  const maxIdx = Math.max(0, products.length - Math.floor(ipv));
+  const canSlide = products.length > Math.floor(ipv);
+  const GAP = 14;
 
-  const scrollLeft = () => {
-    if (currentIndex > 0 && !isTransitioning && canSlide) {
-      setIsTransitioning(true);
-      setTimeout(() => { setCurrentIndex(currentIndex - 1); setIsTransitioning(false); }, 300);
-    }
+  const slide = (dir) => {
+    if (busy) return;
+    setBusy(true);
+    setIdx((p) => Math.min(Math.max(p + dir, 0), maxIdx));
+    setTimeout(() => setBusy(false), 420);
   };
 
-  const scrollRight = () => {
-    if (currentIndex < totalSlides - 1 && !isTransitioning && canSlide) {
-      setIsTransitioning(true);
-      setTimeout(() => { setCurrentIndex(currentIndex + 1); setIsTransitioning(false); }, 300);
-    }
-  };
-
-  const handleProductClick = (product) => navigate(`/product/${product._id}`);
-
-  const handleAddToCart = async (e, product) => {
+  /* handlers */
+  const onCard = (p) => navigate(`/product/${p._id}`);
+  const onCart = async (e, p) => {
     e.stopPropagation();
-    if (product.stock <= 0) return toast.error("Product is out of stock");
+    if (p.stock <= 0) return toast.error("Out of stock");
     try {
-      setAddingToCart((prev) => ({ ...prev, [product._id]: true }));
-      const response = await addProductToCart({ productId: product._id, quantity: 1 });
-      if (response?.success) {
-        toast.success(`${product.name} added to cart!`);
-        dispatch(setCartQuantity(response.cart.totalQuantity));
+      setAdding((a) => ({ ...a, [p._id]: true }));
+      const r = await addProductToCart({ productId: p._id, quantity: 1 });
+      if (r?.success) {
+        toast.success("Added to cart!");
+        dispatch(setCartQuantity(r.cart.totalQuantity));
       }
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to add to cart");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed");
     } finally {
-      setAddingToCart((prev) => ({ ...prev, [product._id]: false }));
+      setAdding((a) => ({ ...a, [p._id]: false }));
     }
   };
-
-  const handleBuyNow = (e, product) => {
+  const onBuy = (e, p) => {
     e.stopPropagation();
-    if (product.stock <= 0) return toast.error("Product is out of stock");
-    navigate("/checkout", { state: { buyNowProduct: [{ product, quantity: 1 }] } });
+    if (p.stock <= 0) return toast.error("Out of stock");
+    navigate("/checkout", {
+      state: { buyNowProduct: [{ product: p, quantity: 1 }] },
+    });
   };
-
-  const handleWishlistToggle = async (e, productId) => {
+  const onWish = async (e, id) => {
     e.stopPropagation();
-    const isCurrentlyWishlisted = wishlistedIds.includes(productId);
-
+    const isW = wishIds.includes(id);
     try {
-      if (isCurrentlyWishlisted) {
-        // REMOVE LOGIC
-        const response = await removeASingleWishlistProduct(productId);
-        if (response?.success) {
-          dispatch(removeFromWishlistRedux(productId));
+      if (isW) {
+        const r = await removeASingleWishlistProduct(id);
+        if (r?.success) {
+          dispatch(removeFromWishlistRedux(id));
           toast.info("Removed from wishlist");
         }
       } else {
-        // ADD LOGIC
-        const response = await addProductToWishList(productId);
-        if (response?.success || response?.message === "Added to wishlist") {
-          dispatch(addToWishlistRedux(productId));
+        const r = await addProductToWishList(id);
+        if (r?.success || r?.message === "Added to wishlist") {
+          dispatch(addToWishlistRedux(id));
           toast.success("Added to wishlist ❤️");
         }
       }
-    } catch (error) {
+    } catch {
       toast.error("Failed to update wishlist");
     }
   };
-
-  const handleShare = async (e, product) => {
+  const onShare = async (e, p) => {
     e.stopPropagation();
-    const productUrl = `${window.location.origin}/product/${product._id}`;
+    const url = `${window.location.origin}/product/${p._id}`;
     if (navigator.share) {
-      try { await navigator.share({ title: product.name, url: productUrl }); } catch (err) {}
+      try {
+        await navigator.share({ title: p.name, url });
+      } catch {}
     } else {
-      navigator.clipboard.writeText(productUrl);
+      navigator.clipboard.writeText(url);
       toast.success("Link copied!");
     }
   };
+  const onViewAll = () =>
+    navigate(`/category/${toCategorySlug(cat)}`, {
+      state: { categoryName: cat },
+    });
 
-  const handleViewAll = () => {
-    const categorySlug = toCategorySlug(safeCategoryName);
-    navigate(`/category/${categorySlug}`, { state: { categoryName: safeCategoryName } });
-  };
+  const translatePct = (idx * 100) / ipv;
 
   return (
-    <div className={`px-4 sm:px-6 md:px-12 lg:px-20 py-6 sm:py-8 bg-linear-to-r ${style.bgColor} dark:bg-gray-900 border border-gray-200 dark:border-gray-800 mb-6 rounded-2xl relative overflow-hidden transition-colors duration-300`}>
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-        <div className="flex items-center gap-4">
-          <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center text-2xl bg-linear-to-r ${colorClass} text-white shadow-lg`}>{style.icon}</div>
-          <div>
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{safeCategoryName}</h2>
-            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">{totalCount} products available</p>
+    <div
+      className="cp-root"
+      style={{
+        borderRadius: 24,
+        overflow: "hidden",
+        marginBottom: 24,
+        boxShadow: "0 4px 24px rgba(0,0,0,.06)",
+        background: "var(--cp-card-bg, #fff)",
+        border: "1.5px solid var(--cp-border, #F0F4F8)",
+      }}
+    >
+      {/* ── header band ─────────────────────────────────────────── */}
+      <div
+        style={{
+          background: `linear-gradient(135deg, ${darkHex} 0%, ${accent} 100%)`,
+          padding: "clamp(16px, 3vw, 22px) clamp(16px, 3vw, 28px)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: 12,
+          position: "relative",
+          overflow: "hidden",
+        }}
+      >
+        {/* decorative circles */}
+        {[
+          { r: -20, t: -20, sz: 130 },
+          { r: 55, b: -55, sz: 190, op: 0.04 },
+        ].map((c, i) => (
+          <div
+            key={i}
+            style={{
+              position: "absolute",
+              right: c.r,
+              top: c.t,
+              bottom: c.b,
+              width: c.sz,
+              height: c.sz,
+              borderRadius: "50%",
+              background: `rgba(255,255,255,${c.op || 0.06})`,
+              pointerEvents: "none",
+            }}
+          />
+        ))}
+
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 14,
+            zIndex: 1,
+            minWidth: 0,
+          }}
+        >
+          {/* icon tile */}
+          <div
+            style={{
+              width: "clamp(44px,8vw,54px)",
+              height: "clamp(44px,8vw,54px)",
+              borderRadius: 14,
+              flexShrink: 0,
+              background: "rgba(255,255,255,.18)",
+              backdropFilter: "blur(10px)",
+              border: "1.5px solid rgba(255,255,255,.28)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "clamp(20px,4vw,24px)",
+            }}
+          >
+            {icon}
+          </div>
+
+          <div style={{ minWidth: 0 }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                flexWrap: "wrap",
+              }}
+            >
+              <h2
+                style={{
+                  margin: 0,
+                  fontFamily: "'Sora',sans-serif",
+                  fontSize: "clamp(15px,3vw,20px)",
+                  fontWeight: 800,
+                  color: "#fff",
+                  letterSpacing: "-0.02em",
+                }}
+              >
+                {cat}
+              </h2>
+              <span
+                style={{
+                  background: "rgba(255,255,255,.2)",
+                  border: "1px solid rgba(255,255,255,.35)",
+                  color: "#fff",
+                  fontSize: 10,
+                  fontWeight: 700,
+                  padding: "2px 8px",
+                  borderRadius: 20,
+                  letterSpacing: ".08em",
+                  textTransform: "uppercase",
+                  flexShrink: 0,
+                }}
+              >
+                {badge}
+              </span>
+            </div>
+            <p
+              style={{
+                margin: 0,
+                fontSize: "clamp(11px,2vw,13px)",
+                color: "rgba(255,255,255,.72)",
+                marginTop: 2,
+              }}
+            >
+              {line} ·{" "}
+              <strong
+                style={{ color: "rgba(255,255,255,.92)", fontWeight: 700 }}
+              >
+                {totalCount}
+              </strong>{" "}
+              products
+            </p>
           </div>
         </div>
-        <button onClick={handleViewAll} className="px-5 py-2.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg hover:bg-gray-100 transition-all border border-gray-300 dark:border-gray-700 flex items-center gap-2 cursor-pointer shadow-sm">
-          <span>View All</span>
-          <ArrowRight size={16} />
+
+        <button className="cp-viewall-btn" onClick={onViewAll}>
+          View All <ArrowUpRight size={14} />
         </button>
       </div>
 
-      <div className="relative group/slider">
-        {canSlide && currentIndex > 0 && (
-          <button onClick={scrollLeft} className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 md:-translate-x-6 w-10 h-10 bg-white/90 dark:bg-gray-800/90 rounded-full shadow-lg flex items-center justify-center z-20 cursor-pointer hover:scale-110 backdrop-blur-sm border border-gray-200 dark:border-gray-700">
-            <ChevronLeft size={24} className="text-gray-800 dark:text-gray-200" />
+      {/* ── carousel ─────────────────────────────────────────────── */}
+      <div
+        style={{
+          padding:
+            "clamp(14px,3vw,22px) clamp(14px,3vw,28px) clamp(16px,3vw,24px)",
+          position: "relative",
+        }}
+      >
+        {/* prev */}
+        {canSlide && idx > 0 && (
+          <button
+            className="cp-nav-btn"
+            onClick={() => slide(-1)}
+            style={{
+              left: -4,
+              borderColor: accent + "33",
+              boxShadow: `0 4px 20px ${accent}22, 0 2px 8px rgba(0,0,0,.08)`,
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = accent;
+              e.currentTarget.style.borderColor = accent;
+              e.currentTarget.querySelector("svg").style.color = "#fff";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "";
+              e.currentTarget.style.borderColor = accent + "33";
+              e.currentTarget.querySelector("svg").style.color = "";
+            }}
+          >
+            <ChevronLeft
+              size={20}
+              color="#374151"
+              style={{ transition: "color .2s" }}
+            />
           </button>
         )}
 
-        <div className="overflow-hidden px-1 py-2">
-          <div className="flex transition-transform duration-500 ease-out" style={{ transform: `translateX(-${currentIndex * (100 / itemsPerView)}%)` }}>
-            {products.map((product) => {
-              const isAdding = addingToCart[product._id];
-              const isWishlisted = wishlistedIds.includes(product._id);
-
-              return (
-                <div key={product._id} onClick={() => handleProductClick(product)} className="shrink-0 bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all border border-gray-100 dark:border-gray-700 group/card flex flex-col mx-2" style={{ width: `calc(${100 / itemsPerView}% - 16px)` }}>
-                  <div className="h-36 sm:h-48 overflow-hidden bg-gray-50 dark:bg-gray-900 relative">
-                    <img src={product.images?.[0]} alt={product.name} className="w-full h-full object-contain p-2 mix-blend-multiply dark:mix-blend-normal group-hover/card:scale-105 transition-transform duration-500" />
-                    
-                    {/* HEART TOGGLE */}
-                    <div className="absolute top-2 right-2 flex flex-col gap-2">
-                      <button
-                        onClick={(e) => handleWishlistToggle(e, product._id)}
-                        className="p-1.5 sm:p-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-full shadow-sm cursor-pointer transition-all hover:scale-110"
-                      >
-                        <Heart
-                          size={16}
-                          fill={isWishlisted ? "#ef4444" : "none"}
-                          className={isWishlisted ? "text-red-500" : "text-gray-600 dark:text-gray-300"}
-                        />
-                      </button>
-                      <button onClick={(e) => handleShare(e, product)} className="p-1.5 sm:p-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-full text-gray-600 dark:text-gray-300 shadow-sm cursor-pointer hover:text-primary"><Share2 size={16} /></button>
-                    </div>
-                  </div>
-
-                  <div className="p-3 sm:p-4 flex flex-col flex-1">
-                    <h3 className="font-medium text-gray-900 dark:text-white mb-1 line-clamp-2 text-xs sm:text-sm h-8 sm:h-10">{product.name}</h3>
-                    <div className="flex items-center gap-1 mb-2">
-                      <span className="text-yellow-400">★ {(product.averageRating || 0).toFixed(1)}</span>
-                      <span className="text-[10px] sm:text-xs text-gray-500">({product.totalRatings || 0})</span>
-                    </div>
-                    <div className="flex items-end gap-2 mb-3 mt-auto">
-                      <span className="text-sm sm:text-lg font-bold text-gray-900 dark:text-white">₹{(product.finalPrice || product.price).toLocaleString()}</span>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      <button onClick={(e) => handleAddToCart(e, product)} disabled={isAdding || product.stock <= 0} className="flex items-center justify-center gap-1 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md text-[10px] sm:text-xs font-semibold cursor-pointer">
-                        <ShoppingBag size={14} className="hidden sm:block" /> {isAdding ? "..." : "Cart"}
-                      </button>
-                      <button onClick={(e) => handleBuyNow(e, product)} disabled={product.stock <= 0} className="flex items-center justify-center gap-1 py-1.5 bg-primary text-white rounded-md text-[10px] sm:text-xs font-semibold cursor-pointer shadow-sm">
-                        <Zap size={14} className="hidden sm:block" /> Buy Now
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+        {/* track */}
+        <div style={{ overflow: "hidden" }}>
+          <div
+            style={{
+              display: "flex",
+              gap: GAP,
+              transform: `translateX(-${translatePct}%)`,
+              transition: "transform .45s cubic-bezier(.25,.46,.45,.94)",
+            }}
+          >
+            {products.map((p) => (
+              <div
+                key={p._id}
+                style={{
+                  width: `calc(${100 / ipv}% - ${(GAP * (ipv - 1)) / ipv}px)`,
+                  flexShrink: 0,
+                }}
+              >
+                <Card
+                  product={p}
+                  accent={accent}
+                  isW={wishIds.includes(p._id)}
+                  isAdding={!!adding[p._id]}
+                  onCard={onCard}
+                  onCart={onCart}
+                  onBuy={onBuy}
+                  onWish={onWish}
+                  onShare={onShare}
+                />
+              </div>
+            ))}
           </div>
         </div>
 
-        {canSlide && currentIndex < totalSlides - 1 && (
-          <button onClick={scrollRight} className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 md:translate-x-6 w-10 h-10 bg-white/90 dark:bg-gray-800/90 rounded-full shadow-lg flex items-center justify-center z-20 cursor-pointer hover:scale-110 backdrop-blur-sm border border-gray-200 dark:border-gray-700">
-            <ChevronRight size={24} className="text-gray-800 dark:text-gray-200" />
+        {/* next */}
+        {canSlide && idx < maxIdx && (
+          <button
+            className="cp-nav-btn"
+            onClick={() => slide(1)}
+            style={{
+              right: -4,
+              borderColor: accent + "33",
+              boxShadow: `0 4px 20px ${accent}22, 0 2px 8px rgba(0,0,0,.08)`,
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = accent;
+              e.currentTarget.style.borderColor = accent;
+              e.currentTarget.querySelector("svg").style.color = "#fff";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "";
+              e.currentTarget.style.borderColor = accent + "33";
+              e.currentTarget.querySelector("svg").style.color = "";
+            }}
+          >
+            <ChevronRight
+              size={20}
+              color="#374151"
+              style={{ transition: "color .2s" }}
+            />
           </button>
+        )}
+
+        {/* dots */}
+        {canSlide && maxIdx > 0 && (
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              gap: 5,
+              marginTop: 18,
+            }}
+          >
+            {Array.from({ length: maxIdx + 1 }, (_, i) => (
+              <button
+                key={i}
+                className="cp-dot"
+                onClick={() => setIdx(i)}
+                style={{
+                  width: i === idx ? 22 : 7,
+                  background: i === idx ? accent : "#E2E8F0",
+                }}
+              />
+            ))}
+          </div>
         )}
       </div>
     </div>
